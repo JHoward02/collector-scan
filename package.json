@@ -1,9 +1,9 @@
 {
   "name": "collector-scan",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Canvas App for quickly looking up and tracking a collector's collection.",
+  "description": "Shelfie: quickly look up and track a collector's collection.",
   "scripts": {
     "build": "vite build",
     "build:web": "vite build --config vite.web.config.ts",
