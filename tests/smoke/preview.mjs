@@ -42,12 +42,15 @@ const source = ${JSON.stringify(bundleSource)};
 const OL = ${JSON.stringify(OL_DOCS)};
 const WIKI = ${JSON.stringify(WIKI_PAGES)};
 
-// Deterministic provider responses so screenshots are stable.
-window.fetch = async (input) => {
-  const url = String(input);
-  const body = url.includes("openlibrary.org") ? { docs: OL } : { query: { pages: WIKI } };
-  return { ok: true, status: 200, json: async () => body };
-};
+// Deterministic provider responses so screenshots are stable. Append ?live to
+// the URL to skip the stub and hit the real public APIs instead.
+if (!new URLSearchParams(location.search).has("live")) {
+  window.fetch = async (input) => {
+    const url = String(input);
+    const body = url.includes("openlibrary.org") ? { docs: OL } : { query: { pages: WIKI } };
+    return { ok: true, status: 200, json: async () => body };
+  };
+}
 
 const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
 const mod = await import(/* @vite-ignore */ url);
