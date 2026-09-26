@@ -323,6 +323,36 @@ export const styles = `
 }
 .cs-item__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .cs-item__value { font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* ---------- group item picker ---------- */
+.cs-pick {
+  align-items: center;
+  background: var(--cs-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius);
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  min-height: var(--cs-tap);
+  padding: 10px;
+}
+.cs-pick--on { border-color: var(--cs-accent); box-shadow: inset 0 0 0 1px var(--cs-accent); }
+.cs-pick__box {
+  accent-color: var(--cs-accent);
+  flex: none;
+  height: 20px;
+  margin: 0;
+  width: 20px;
+}
+.cs-pick__body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.cs-pick__state {
+  color: var(--cs-accent);
+  flex: none;
+  font-size: 17px;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: right;
+}
 .cs-star {
   background: transparent;
   border: 0;

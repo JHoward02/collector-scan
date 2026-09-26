@@ -20,7 +20,7 @@ import {
 
 const PAGE_ROOT = "/collection";
 
-type ViewName = "search" | "collection" | "candidate" | "item" | "group" | "unknown";
+type ViewName = "search" | "collection" | "candidate" | "item" | "group" | "group-items" | "unknown";
 
 const UNGROUPED = "ungrouped";
 /** Sentinel option value meaning "create a group from the adjacent name field". */
@@ -98,8 +98,14 @@ export class CollectorApp {
     const param = rest.join("/");
     if (head === "collection" && rest.length === 0) return { view: "collection", param: "" };
     // Paths are relative to the page root, so a group link arrives as
-    // "group/<id>" rather than "collection/group/<id>". Accept both.
+    // "group/<id>" rather than "collection/group/<id>". Accept both. The
+    // trailing "items" segment selects the picker, so it is matched first —
+    // otherwise the plain group case would swallow it into the id.
+    if (head === "group" && rest[0] && rest[1] === "items") return { view: "group-items", param: rest[0] };
     if (head === "group" && rest[0]) return { view: "group", param: rest.join("/") };
+    if (head === "collection" && rest[0] === "group" && rest[2] === "items" && rest[1]) {
+      return { view: "group-items", param: rest[1] };
+    }
     if (head === "collection" && rest[0] === "group" && rest[1]) {
       return { view: "group", param: rest.slice(1).join("/") };
     }
@@ -124,7 +130,7 @@ export class CollectorApp {
     clear(root);
     root.append(this.renderHeader());
 
-    const isDetail = view === "candidate" || view === "item" || view === "group";
+    const isDetail = view === "candidate" || view === "item" || view === "group" || view === "group-items";
     if (!isDetail) root.append(this.renderTabs());
 
     switch (view) {
@@ -136,6 +142,9 @@ export class CollectorApp {
         break;
       case "group":
         root.append(this.renderGroupView(decodeURIComponent(param)));
+        break;
+      case "group-items":
+        root.append(this.renderGroupItemsView(decodeURIComponent(param)));
         break;
       case "candidate":
         root.append(this.renderCandidateView(decodeURIComponent(param)));
@@ -786,14 +795,19 @@ export class CollectorApp {
   }
 
   private backButton(label: string): HTMLElement {
+    return this.backTo(label, "", "search");
+  }
+
+  /** Back control that returns to an explicit route rather than always search. */
+  private backTo(label: string, subpath: string, tab: Tab): HTMLElement {
     return el("button", {
       class: "cs-button cs-button--ghost",
       text: `← ${label}`,
       attrs: { type: "button" },
       on: {
         click: () => {
-          this.session.activeTab = "search";
-          this.go("");
+          this.session.activeTab = tab;
+          this.go(subpath);
           this.render();
         },
       },
@@ -957,6 +971,14 @@ export class CollectorApp {
       this.session.groupFormOpen = false;
       this.session.collectionGroupFilter = group.id;
       this.session.flash = `Group “${group.name}” created.`;
+      // With items on hand, go straight to filing them in. An empty collection
+      // has nothing to pick, so stay put instead of showing an empty picker.
+      if (this.items.length === 0) {
+        this.render();
+        this.armFlash();
+        return;
+      }
+      this.go(`group/${encodeURIComponent(group.id)}/items`);
       this.render();
       this.armFlash();
     };
@@ -1220,8 +1242,173 @@ export class CollectorApp {
       );
     }
 
+    // Reachable whether or not the group already has items, so the picker is
+    // not a one-shot screen available only at creation time.
+    wrap.append(
+      el("button", {
+        class: "cs-button cs-button--block",
+        text: "Add or remove items",
+        attrs: { type: "button" },
+        on: {
+          click: () => {
+            this.go(`group/${encodeURIComponent(group.id)}/items`);
+            this.render();
+          },
+        },
+      }),
+    );
+
     wrap.append(this.renderGroupSettings(group, members.length));
     return wrap;
+  }
+
+  /**
+   * Post-creation picker: choose which saved items belong to this group.
+   *
+   * Rows reflect the whole collection rather than only ungrouped items, so an
+   * item already in another group can be moved here. Toggling writes through
+   * immediately — there is no Save button, because a half-applied selection the
+   * user forgot to confirm would be worse than an instant, reversible one.
+   */
+  private renderGroupItemsView(id: string): HTMLElement {
+    const group = this.groups.find((entry) => entry.id === id);
+    if (!group) {
+      return el("div", { class: "cs-detail" }, [
+        this.stateBlock("Group not found", "That group no longer exists."),
+        this.backTo("Back to collection", "collection", "collection"),
+      ]);
+    }
+
+    const back = `group/${encodeURIComponent(group.id)}`;
+    const wrap = el("div", { class: "cs-detail" });
+    wrap.append(this.backTo("Back to group", back, "collection"));
+
+    const memberCount = this.items.filter((item) => item.groupId === group.id).length;
+
+    wrap.append(
+      el("section", { class: "cs-section" }, [
+        el("h3", { class: "cs-detail__title", text: group.name }),
+        el("p", {
+          class: "cs-detail__sub",
+          text:
+            this.items.length === 0
+              ? "Your collection is empty."
+              : `${memberCount} of ${this.items.length} ${this.items.length === 1 ? "item" : "items"} in this group.`,
+        }),
+      ]),
+    );
+
+    if (this.items.length === 0) {
+      wrap.append(
+        this.stateBlock(
+          "Nothing to choose from",
+          "Save an item from the Find tab, then come back to file it into this group.",
+        ),
+      );
+      wrap.append(
+        el("button", {
+          class: "cs-button cs-button--block",
+          text: "Find an item",
+          attrs: { type: "button" },
+          on: {
+            click: () => {
+              this.session.activeTab = "search";
+              this.go("");
+              this.render();
+            },
+          },
+        }),
+      );
+      return wrap;
+    }
+
+    const list = el("ul", { class: "cs-results", attrs: { id: "cs-group-items" } });
+    for (const item of this.items) list.append(el("li", {}, [this.renderGroupItemRow(item, group)]));
+    wrap.append(el("section", { class: "cs-section" }, [list]));
+
+    wrap.append(
+      el("p", {
+        class: "cs-hint",
+        text: "Tap an item to add or remove it. Changes save as you go.",
+      }),
+    );
+
+    wrap.append(
+      el("button", {
+        class: "cs-button cs-button--block",
+        text: "Done",
+        attrs: { type: "button" },
+        on: {
+          click: () => {
+            this.go(back);
+            this.render();
+          },
+        },
+      }),
+    );
+
+    return wrap;
+  }
+
+  /** One tappable row in the picker. Toggling files the item in or out. */
+  private renderGroupItemRow(item: CollectionItem, group: CollectionGroup): HTMLElement {
+    const member = item.groupId === group.id;
+    const otherGroup = item.groupId && item.groupId !== group.id ? this.groupName(item.groupId) : null;
+
+    const toggle = (): void => {
+      this.setItemGroup(item.id, member ? null : group.id);
+      this.render();
+      this.armFlash();
+    };
+
+    // A <label> wrapping the checkbox makes the whole row a tap target without
+    // nesting interactive content inside a <button>, which is invalid markup.
+    const box = el("input", {
+      class: "cs-pick__box",
+      attrs: {
+        type: "checkbox",
+        id: `cs-pick-${item.id}`,
+        checked: member,
+        "aria-label": `${member ? "Remove" : "Add"} ${item.title}`,
+      },
+      on: { change: toggle },
+    });
+
+    const meta = [CATEGORY_LABELS[item.category], item.year ? String(item.year) : null]
+      .filter((part): part is string => Boolean(part))
+      .join(" · ");
+
+    return el(
+      "label",
+      {
+        class: `cs-pick${member ? " cs-pick--on" : ""}`,
+        attrs: { for: `cs-pick-${item.id}` },
+      },
+      [
+        box,
+        thumbnail(item.imageUrl, CATEGORY_GLYPHS[item.category], item.title),
+        el("div", { class: "cs-pick__body" }, [
+          el("p", { class: "cs-card__title", text: item.title }),
+          el("p", { class: "cs-card__meta", text: meta }),
+          otherGroup
+            ? el("p", { class: "cs-card__meta", text: `In ${otherGroup} — tap to move here` })
+            : null,
+        ]),
+        el("span", { class: "cs-pick__state", text: member ? "✓" : "" }),
+      ],
+    );
+  }
+
+  /** Moves one item into a group, or clears it when `groupId` is null. */
+  private setItemGroup(itemId: string, groupId: string | null): void {
+    const item = this.items.find((entry) => entry.id === itemId);
+    if (!item) return;
+    this.items = this.items.map((entry) =>
+      entry.id === itemId ? { ...entry, groupId, updatedAt: Date.now() } : entry,
+    );
+    this.persist();
+    const name = groupId ? this.groupName(groupId) : null;
+    this.session.flash = name ? `“${item.title}” added to ${name}.` : `“${item.title}” removed from the group.`;
   }
 
   private renderGroupSettings(group: CollectionGroup, memberCount: number): HTMLElement {

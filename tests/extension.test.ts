@@ -876,3 +876,151 @@ describe("collection groups", () => {
     expect(root.textContent).toContain("Sonic the Hedgehog Comics from Archie (0)");
   });
 });
+
+describe("group item picker", () => {
+  /** Creates a group from the collection view's inline form. */
+  async function createGroupFromCollection(container: HTMLElement, name: string): Promise<void> {
+    await double0.open("collection", { container, path: "collection" });
+    clickChip(activeRoot(container), "+ New group");
+    const root = activeRoot(container);
+    root.querySelector<HTMLInputElement>("#cs-new-group-name")!.value = name;
+    root.querySelector<HTMLFormElement>(".cs-search__row")!.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+  }
+
+  let double0: ReturnType<typeof createHostDouble>;
+  beforeEach(() => {
+    double0 = createHostDouble();
+    activate(double0.host);
+  });
+
+  it("sends the user to the picker after creating a group with items on hand", async () => {
+    const container = mountContainer();
+    await saveFirstMatch(container, double0);
+
+    await createGroupFromCollection(container, "Sonic the Hedgehog Comics from Archie");
+
+    // The host drives navigation, so assert the route it was handed.
+    const routed = double0.navigate.mock.calls.map((call) => String(call[0]));
+    expect(routed.some((path) => path.includes("group/") && path.endsWith("/items"))).toBe(true);
+
+    await double0.open("collection", {
+      container,
+      path: `collection/group/${encodeURIComponent(firstGroupId())}/items`,
+    });
+    const root = activeRoot(container);
+    expect(root.textContent).toContain("0 of 1 item in this group.");
+    expect(root.querySelectorAll(".cs-pick")).toHaveLength(1);
+  });
+
+  it("stays on the collection view when there is nothing to pick", async () => {
+    const container = mountContainer();
+    await createGroupFromCollection(container, "Sonic the Hedgehog Comics from Archie");
+
+    // An empty collection has no candidates, so an empty picker would be a dead end.
+    const routed = double0.navigate.mock.calls.map((call) => String(call[0]));
+    expect(routed.some((path) => path.endsWith("/items"))).toBe(false);
+    expect(activeRoot(container).textContent).toContain("Nothing tracked yet");
+  });
+
+  it("adds and removes an item by toggling it in the picker", async () => {
+    const container = mountContainer();
+    await saveFirstMatch(container, double0);
+    await createGroupFromCollection(container, "Sonic the Hedgehog Comics from Archie");
+    const id = firstGroupId();
+
+    await double0.open("collection", {
+      container,
+      path: `collection/group/${encodeURIComponent(id)}/items`,
+    });
+    expect(activeRoot(container).textContent).toContain("0 of 1 item in this group.");
+
+    activeRoot(container).querySelector<HTMLInputElement>(".cs-pick__box")!.click();
+    let root = activeRoot(container);
+    expect(root.textContent).toContain("1 of 1 item in this group.");
+    expect(root.querySelector(".cs-pick--on")).not.toBeNull();
+
+    const saved = JSON.parse(
+      localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!,
+    );
+    expect(saved.items[0].groupId).toBe(id);
+
+    // Toggling again files it back out.
+    activeRoot(container).querySelector<HTMLInputElement>(".cs-pick__box")!.click();
+    root = activeRoot(container);
+    expect(root.textContent).toContain("0 of 1 item in this group.");
+    expect(root.querySelector(".cs-pick--on")).toBeNull();
+    expect(
+      JSON.parse(localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!).items[0]
+        .groupId,
+    ).toBeNull();
+  });
+
+  it("moves an item out of another group", async () => {
+    const container = mountContainer();
+    await saveFirstMatch(container, double0, (root) =>
+      createGroupViaSelect(root, "cs-add", "Sonic the Hedgehog Comics from Archie"),
+    );
+    const first = firstGroupId();
+
+    // A second group is created from the collection view, then the item is
+    // reassigned to it through the picker.
+    await createGroupFromCollection(container, "Mickey Mantle");
+    const saved = JSON.parse(
+      localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!,
+    );
+    const second = saved.groups.find((group: { id: string }) => group.id !== first).id;
+
+    await double0.open("collection", {
+      container,
+      path: `collection/group/${encodeURIComponent(second)}/items`,
+    });
+    const root = activeRoot(container);
+    expect(root.textContent).toContain("tap to move here");
+
+    root.querySelector<HTMLInputElement>(".cs-pick__box")!.click();
+    expect(
+      JSON.parse(localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!).items[0]
+        .groupId,
+    ).toBe(second);
+  });
+
+  it("keeps the picker reachable from the group detail view", async () => {
+    const container = mountContainer();
+    await saveFirstMatch(container, double0, (root) =>
+      createGroupViaSelect(root, "cs-add", "Sonic the Hedgehog Comics from Archie"),
+    );
+    const id = firstGroupId();
+
+    await double0.open("collection", { container, path: `collection/group/${encodeURIComponent(id)}` });
+    const entry = [...activeRoot(container).querySelectorAll<HTMLButtonElement>(".cs-button")].find((button) =>
+      button.textContent?.includes("Add or remove items"),
+    );
+    expect(entry).toBeDefined();
+
+    entry!.click();
+    const routed = double0.navigate.mock.calls.map((call) => String(call[0]));
+    expect(routed.some((path) => path.includes("group/") && path.endsWith("/items"))).toBe(true);
+  });
+
+  it("does not confuse the picker route with a group id", async () => {
+    const container = mountContainer();
+    await saveFirstMatch(container, double0, (root) =>
+      createGroupViaSelect(root, "cs-add", "Sonic the Hedgehog Comics from Archie"),
+    );
+    const id = firstGroupId();
+
+    // Without matching the trailing segment first, "items" would be read as part
+    // of the group id and this would fall through to "Group not found".
+    await double0.open("collection", {
+      container,
+      path: `collection/group/${encodeURIComponent(id)}/items`,
+    });
+    expect(activeRoot(container).textContent).not.toContain("Group not found");
+
+    // The plain group route still resolves to the detail view.
+    await double0.open("collection", { container, path: `collection/group/${encodeURIComponent(id)}` });
+    expect(activeRoot(container).textContent).toContain("Group settings");
+  });
+});

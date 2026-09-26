@@ -19,7 +19,8 @@ persists the collection to `localStorage`.
 
 - `src/extension.ts` — `activate()`: builds `AppSession` + `CollectionStore`,
   registers the `collection` page, injects scoped styles
-- `src/app.ts` — view rendering and routing (search / candidate / collection)
+- `src/app.ts` — view rendering and routing (search / candidate / collection /
+  group / group-items)
 - `src/session.ts` — activation-scoped state, including `resultTokens`
 - `src/match.ts` — scoring and `confidenceLabel(score, tokenCount?)`
 - `src/providers/` — `openlibrary.ts`, `wikipedia.ts`
@@ -64,6 +65,11 @@ parameter and the assertion in the request-shape test.
 - The header/list totals prefer recorded estimated values but fall back to
   price paid, so a collection with only purchase prices never reads `$0.00`.
 - Single-keyword queries are capped below "Strong match" via `resultTokens`.
+- The group item picker (`group/<id>/items`) writes each toggle straight
+  through; there is no Save button. Rows are `<label>`s wrapping a checkbox —
+  nesting the checkbox inside a `<button>` would be invalid markup.
+- `resolveView()` must match the trailing `items` segment before the plain
+  `group/<id>` case, or "items" is swallowed into the group id.
 
 ## Repository access
 
