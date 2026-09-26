@@ -1,6 +1,6 @@
 {
   "name": "collector-scan",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Shelfie: quickly look up and track a collector's collection.",
