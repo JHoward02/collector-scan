@@ -1,9 +1,16 @@
-import type { Candidate, Category, CollectionItem, Condition } from "./types.ts";
+import type { Candidate, Category, CollectionGroup, CollectionItem, Condition } from "./types.ts";
 
+/**
+ * Storage schema version. Bumping this changes the storage key and would orphan
+ * an existing collection, so only bump it for a breaking change. Groups were
+ * added as a purely additive field, so the version stays at 1 and older
+ * payloads simply revive with no groups.
+ */
 const SCHEMA_VERSION = 1;
 
 export interface StoreSnapshot {
   items: CollectionItem[];
+  groups: CollectionGroup[];
   /** Set when persisted data could not be read, so the UI can warn once. */
   warning: string | null;
 }
@@ -11,6 +18,7 @@ export interface StoreSnapshot {
 interface PersistedShape {
   schemaVersion: number;
   items: unknown[];
+  groups: unknown[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -65,7 +73,18 @@ function reviveItem(value: unknown): CollectionItem | null {
     estimatedValue: optionalNumber(value.estimatedValue),
     notes: text(value.notes),
     favorite: value.favorite === true,
+    groupId: optionalText(value.groupId),
   };
+}
+
+/** Groups with no usable id or name are dropped. */
+function reviveGroup(value: unknown): CollectionGroup | null {
+  if (!isRecord(value)) return null;
+  const id = text(value.id).trim();
+  const name = text(value.name).trim();
+  if (!id || !name) return null;
+  const createdAt = optionalNumber(value.createdAt) ?? Date.now();
+  return { id, name, createdAt, updatedAt: optionalNumber(value.updatedAt) ?? createdAt };
 }
 
 export function makeId(): string {
@@ -96,6 +115,7 @@ export function itemFromCandidate(candidate: Candidate): CollectionItem {
     estimatedValue: null,
     notes: "",
     favorite: false,
+    groupId: null,
   };
 }
 
@@ -119,34 +139,43 @@ export class CollectionStore {
   }
 
   load(): StoreSnapshot {
-    if (!this.storage) return { items: [], warning: "Local storage is unavailable in this browser." };
+    if (!this.storage) {
+      return { items: [], groups: [], warning: "Local storage is unavailable in this browser." };
+    }
     let raw: string | null = null;
     try {
       raw = this.storage.getItem(this.key);
     } catch {
-      return { items: [], warning: "Could not read saved collection data." };
+      return { items: [], groups: [], warning: "Could not read saved collection data." };
     }
-    if (!raw) return { items: [], warning: null };
+    if (!raw) return { items: [], groups: [], warning: null };
 
     try {
       const parsed: unknown = JSON.parse(raw);
-      const items = isRecord(parsed)
-        ? (Array.isArray(parsed.items) ? parsed.items : [])
-        : Array.isArray(parsed)
-          ? parsed
-          : [];
-      const revived = items
+      // Older payloads predate groups entirely; they revive as an empty list.
+      const rawItems = isRecord(parsed) && Array.isArray(parsed.items) ? parsed.items : [];
+      const rawGroups = isRecord(parsed) && Array.isArray(parsed.groups) ? parsed.groups : [];
+
+      const groups = rawGroups
+        .map(reviveGroup)
+        .filter((group): group is CollectionGroup => group !== null);
+
+      const known = new Set(groups.map((group) => group.id));
+      const items = rawItems
         .map(reviveItem)
-        .filter((item): item is CollectionItem => item !== null);
-      return { items: revived, warning: null };
+        .filter((item): item is CollectionItem => item !== null)
+        // Drop dangling membership so a deleted group can never hide an item.
+        .map((item) => (item.groupId && !known.has(item.groupId) ? { ...item, groupId: null } : item));
+
+      return { items, groups, warning: null };
     } catch {
-      return { items: [], warning: "Saved collection data was unreadable and has been reset." };
+      return { items: [], groups: [], warning: "Saved collection data was unreadable and has been reset." };
     }
   }
 
-  save(items: CollectionItem[]): string | null {
+  save(items: CollectionItem[], groups: CollectionGroup[]): string | null {
     if (!this.storage) return "Local storage is unavailable, so changes will not persist.";
-    const payload: PersistedShape = { schemaVersion: SCHEMA_VERSION, items };
+    const payload: PersistedShape = { schemaVersion: SCHEMA_VERSION, items, groups };
     try {
       this.storage.setItem(this.key, JSON.stringify(payload));
       return null;

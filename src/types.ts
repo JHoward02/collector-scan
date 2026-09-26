@@ -55,6 +55,18 @@ export const CONDITIONS = [
 
 export type Condition = (typeof CONDITIONS)[number];
 
+/**
+ * A user-created grouping of items, e.g. "Sonic the Hedgehog Comics from
+ * Archie". Groups are named by the user and exist purely for organisation, so
+ * membership is tracked by id rather than by any provider metadata.
+ */
+export interface CollectionGroup {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 /** A tracked collection entry. */
 export interface CollectionItem {
   id: string;
@@ -76,6 +88,8 @@ export interface CollectionItem {
   estimatedValue: number | null;
   notes: string;
   favorite: boolean;
+  /** Owning group, or null when the item is ungrouped. */
+  groupId: string | null;
 }
 
 export type SearchStatus = "idle" | "loading" | "ready" | "error";

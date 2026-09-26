@@ -4,7 +4,7 @@ import { confidenceLabel, type ScoredCandidate } from "./match.ts";
 import { searchAll } from "./providers/index.ts";
 import { parseQuery } from "./query.ts";
 import type { AppSession, SortKey, Tab } from "./session.ts";
-import { CollectionStore, itemFromCandidate } from "./store.ts";
+import { CollectionStore, itemFromCandidate, makeId } from "./store.ts";
 import { formatDate, normalizeText, tokenize } from "./text.ts";
 import {
   CATEGORY_GLYPHS,
@@ -13,13 +13,18 @@ import {
   type Candidate,
   type Category,
   type CategoryFilter,
+  type CollectionGroup,
   type CollectionItem,
   type Condition,
 } from "./types.ts";
 
 const PAGE_ROOT = "/collection";
 
-type ViewName = "search" | "collection" | "candidate" | "item" | "unknown";
+type ViewName = "search" | "collection" | "candidate" | "item" | "group" | "unknown";
+
+const UNGROUPED = "ungrouped";
+/** Sentinel option value meaning "create a group from the adjacent name field". */
+const NEW_GROUP = "__new_group__";
 
 const SUGGESTIONS = ["Amazing Spider-Man #300", "1952 Topps Mickey Mantle", "Watchmen", "Action Comics #1"];
 
@@ -33,6 +38,7 @@ const SORT_LABELS: Record<SortKey, string> = {
 export class CollectorApp {
   private readonly store: CollectionStore;
   private items: CollectionItem[] = [];
+  private groups: CollectionGroup[] = [];
   private root: HTMLElement | null = null;
   private listHost: HTMLElement | null = null;
   private searchAbort: AbortController | null = null;
@@ -48,6 +54,7 @@ export class CollectorApp {
     this.store = new CollectionStore(host.extension.name, host.backend.id);
     const snapshot = this.store.load();
     this.items = snapshot.items;
+    this.groups = snapshot.groups;
     if (snapshot.warning) this.session.warnings.push(snapshot.warning);
     if (!this.store.available) {
       this.session.warnings.push("Local storage is unavailable, so the collection will not persist.");
@@ -90,6 +97,12 @@ export class CollectorApp {
     const [head, ...rest] = segments;
     const param = rest.join("/");
     if (head === "collection" && rest.length === 0) return { view: "collection", param: "" };
+    // Paths are relative to the page root, so a group link arrives as
+    // "group/<id>" rather than "collection/group/<id>". Accept both.
+    if (head === "group" && rest[0]) return { view: "group", param: rest.join("/") };
+    if (head === "collection" && rest[0] === "group" && rest[1]) {
+      return { view: "group", param: rest.slice(1).join("/") };
+    }
     if (head === "candidate" && param) return { view: "candidate", param };
     if (head === "item" && param) return { view: "item", param };
     if (head === "search" && rest.length === 0) return { view: "search", param: "" };
@@ -111,7 +124,8 @@ export class CollectorApp {
     clear(root);
     root.append(this.renderHeader());
 
-    if (view !== "candidate" && view !== "item") root.append(this.renderTabs());
+    const isDetail = view === "candidate" || view === "item" || view === "group";
+    if (!isDetail) root.append(this.renderTabs());
 
     switch (view) {
       case "search":
@@ -119,6 +133,9 @@ export class CollectorApp {
         break;
       case "collection":
         root.append(this.renderCollectionView());
+        break;
+      case "group":
+        root.append(this.renderGroupView(decodeURIComponent(param)));
         break;
       case "candidate":
         root.append(this.renderCandidateView(decodeURIComponent(param)));
@@ -525,6 +542,14 @@ export class CollectorApp {
       attrs: { id: "cs-add-notes", rows: "3", placeholder: "Where you found it, defects, asking price…" },
     });
 
+    // Preselect the group the user is currently browsing, so filing an item
+    // into the group they came from takes no extra taps.
+    const activeGroup =
+      this.session.collectionGroupFilter !== "all" && this.session.collectionGroupFilter !== UNGROUPED
+        ? this.session.collectionGroupFilter
+        : null;
+    const group = this.groupField("cs-add", activeGroup);
+
     section.append(
       el("div", { class: "cs-grid2" }, [
         this.field("Condition", condition),
@@ -534,6 +559,7 @@ export class CollectorApp {
         this.field("Price paid", price),
         this.field("Quantity", quantity),
       ]),
+      group.field,
       this.field("Notes", notes),
     );
 
@@ -550,6 +576,7 @@ export class CollectorApp {
             item.pricePaid = parseMoney(price.value);
             item.quantity = Math.max(1, Math.trunc(Number(quantity.value) || 1));
             item.notes = notes.value.trim();
+            item.groupId = group.resolve();
             this.items = [item, ...this.items];
             this.persist();
             this.session.activeTab = "collection";
@@ -588,6 +615,9 @@ export class CollectorApp {
             el("span", { class: "cs-tag", text: CATEGORY_LABELS[item.category] }),
             el("span", { class: "cs-tag", text: item.condition }),
             item.grade ? el("span", { class: "cs-tag", text: item.grade }) : null,
+            this.groupName(item.groupId)
+              ? el("span", { class: "cs-tag cs-tag--group", text: this.groupName(item.groupId) as string })
+              : null,
             el("span", { class: "cs-tag", text: `Added ${formatDate(item.addedAt)}` }),
           ]),
         ]),
@@ -667,6 +697,8 @@ export class CollectorApp {
     });
     notes.value = item.notes;
 
+    const group = this.groupField("cs-edit", item.groupId);
+
     section.append(
       el("div", { class: "cs-grid2" }, [this.field("Condition", condition), this.field("Grade / slab", grade)]),
       el("div", { class: "cs-grid2" }, [this.field("Price paid", price), this.field("Estimated value", value)]),
@@ -674,6 +706,7 @@ export class CollectorApp {
         this.field("Quantity", quantity),
         this.field("Favourite", this.favoriteToggle(item)),
       ]),
+      group.field,
       this.field("Notes", notes),
     );
 
@@ -693,6 +726,7 @@ export class CollectorApp {
                 estimatedValue: parseMoney(value.value),
                 quantity: Math.max(1, Math.trunc(Number(quantity.value) || 1)),
                 notes: notes.value.trim(),
+                groupId: group.resolve(),
                 updatedAt: Date.now(),
               };
               this.items = this.items.map((entry) => (entry.id === item.id ? updated : entry));
@@ -770,9 +804,12 @@ export class CollectorApp {
 
   private filteredItems(): CollectionItem[] {
     const needle = normalizeText(this.session.collectionQuery);
+    const groupFilter = this.session.collectionGroupFilter;
     let items = this.items.filter((item) => {
       if (this.session.favoritesOnly && !item.favorite) return false;
       if (this.session.collectionFilter !== "all" && item.category !== this.session.collectionFilter) return false;
+      if (groupFilter === UNGROUPED && item.groupId) return false;
+      if (groupFilter !== "all" && groupFilter !== UNGROUPED && item.groupId !== groupFilter) return false;
       if (!needle) return true;
       const haystack = normalizeText(
         [item.title, item.subtitle ?? "", item.notes, item.grade, ...item.details.map((row) => row.value)].join(" "),
@@ -794,6 +831,215 @@ export class CollectorApp {
       }
     });
     return items;
+  }
+
+  // ------------------------------------------------------------------- groups
+
+  private groupName(id: string | null): string | null {
+    if (!id) return null;
+    return this.groups.find((group) => group.id === id)?.name ?? null;
+  }
+
+  /** Group names are compared case-insensitively so duplicates are obvious. */
+  private findGroupByName(name: string): CollectionGroup | null {
+    const needle = normalizeText(name);
+    return this.groups.find((group) => normalizeText(group.name) === needle) ?? null;
+  }
+
+  private createGroup(rawName: string): CollectionGroup | null {
+    const name = rawName.trim();
+    if (!name) return null;
+    const existing = this.findGroupByName(name);
+    if (existing) return existing;
+    const now = Date.now();
+    const group: CollectionGroup = { id: makeId(), name, createdAt: now, updatedAt: now };
+    this.groups = [...this.groups, group];
+    this.persist();
+    return group;
+  }
+
+  /** Item counts per group id, used for the chip labels. */
+  private groupCounts(): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const item of this.items) {
+      if (!item.groupId) continue;
+      counts.set(item.groupId, (counts.get(item.groupId) ?? 0) + 1);
+    }
+    return counts;
+  }
+
+  private renderGroupChips(): HTMLElement {
+    const row = el("div", { class: "cs-chips cs-chips--scroll" });
+    const counts = this.groupCounts();
+    const ungrouped = this.items.filter((item) => !item.groupId).length;
+
+    const chip = (label: string, value: string, count: number | null): HTMLElement =>
+      el("button", {
+        class: "cs-chip",
+        text: count == null ? label : `${label} (${count})`,
+        attrs: {
+          type: "button",
+          "aria-pressed": String(this.session.collectionGroupFilter === value),
+        },
+        on: {
+          click: () => {
+            this.session.collectionGroupFilter = value;
+            this.render();
+          },
+        },
+      });
+
+    row.append(chip("All", "all", null));
+    if (ungrouped > 0) row.append(chip("Ungrouped", UNGROUPED, ungrouped));
+    for (const group of this.groups) {
+      row.append(chip(group.name, group.id, counts.get(group.id) ?? 0));
+    }
+    row.append(
+      el("button", {
+        class: "cs-chip cs-chip--new",
+        text: this.session.groupFormOpen ? "× Cancel" : "+ New group",
+        attrs: { type: "button" },
+        on: {
+          click: () => {
+            this.session.groupFormOpen = !this.session.groupFormOpen;
+            this.render();
+          },
+        },
+      }),
+    );
+
+    return row;
+  }
+
+  /**
+   * Empty groups have no item cards to tap, so the detail view would be
+   * unreachable without this shortcut on the active chip.
+   */
+  private renderActiveGroupActions(): HTMLElement | null {
+    const filter = this.session.collectionGroupFilter;
+    if (filter === "all" || filter === UNGROUPED) return null;
+    const group = this.groups.find((entry) => entry.id === filter);
+    if (!group) return null;
+    return el("button", {
+      class: "cs-button cs-button--ghost cs-button--block",
+      text: `Manage “${group.name}”`,
+      attrs: { type: "button" },
+      on: {
+        click: () => {
+          this.go(`group/${encodeURIComponent(group.id)}`);
+          this.render();
+        },
+      },
+    });
+  }
+
+  /**
+   * Inline create form. Deliberately not `window.prompt`: that is blocked in
+   * some embedded webviews and cannot be styled or tested.
+   */
+  private renderGroupCreateForm(): HTMLElement | null {
+    if (!this.session.groupFormOpen) return null;
+
+    const input = el("input", {
+      class: "cs-input",
+      attrs: {
+        id: "cs-new-group-name",
+        type: "text",
+        placeholder: "e.g. Sonic the Hedgehog Comics from Archie",
+        autocomplete: "off",
+        enterkeyhint: "done",
+      },
+    });
+
+    const submit = (): void => {
+      const group = this.createGroup(input.value);
+      if (!group) return;
+      this.session.groupFormOpen = false;
+      this.session.collectionGroupFilter = group.id;
+      this.session.flash = `Group “${group.name}” created.`;
+      this.render();
+      this.armFlash();
+    };
+
+    input.addEventListener("keydown", (event) => {
+      if ((event as KeyboardEvent).key === "Enter") {
+        event.preventDefault();
+        submit();
+      }
+    });
+
+    const form = el("form", { class: "cs-search__row" }, [
+      input,
+      el("button", { class: "cs-button", text: "Create", attrs: { type: "submit" } }),
+    ]);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      submit();
+    });
+
+    return el("div", { class: "cs-section" }, [
+      el("h3", { class: "cs-section__title", text: "New group" }),
+      form,
+      el("p", { class: "cs-hint", text: "Name it however you sort things — by series, publisher, or where you hunt." }),
+    ]);
+  }
+
+  /**
+   * Group picker shared by the add and edit forms. Choosing "New group…"
+   * reveals a name field so an item can be filed into a brand-new group without
+   * leaving the form. `resolve` is called on save and returns the group id to
+   * apply, creating the group if a new name was typed.
+   */
+  private groupField(
+    idPrefix: string,
+    currentGroupId: string | null,
+  ): { field: HTMLElement; resolve: () => string | null } {
+    const select = el("select", { class: "cs-select", attrs: { id: `${idPrefix}-group` } }, [
+      el("option", { text: "No group", attrs: { value: "", selected: !currentGroupId } }),
+      ...this.groups.map((group) =>
+        el("option", {
+          text: group.name,
+          attrs: { value: group.id, selected: group.id === currentGroupId },
+        }),
+      ),
+      el("option", { text: "+ New group…", attrs: { value: NEW_GROUP } }),
+    ]);
+
+    const nameInput = el("input", {
+      class: "cs-input",
+      attrs: {
+        id: `${idPrefix}-group-name`,
+        type: "text",
+        placeholder: "Group name",
+        autocomplete: "off",
+        hidden: true,
+      },
+    });
+
+    const toggleName = (): void => {
+      const isNew = select.value === NEW_GROUP;
+      if (isNew) nameInput.removeAttribute("hidden");
+      else nameInput.setAttribute("hidden", "");
+    };
+    select.addEventListener("change", toggleName);
+    toggleName();
+
+    const field = el("div", { class: "cs-field" }, [
+      el("label", { class: "cs-field__label", attrs: { for: `${idPrefix}-group` }, text: "Group" }),
+      select,
+      nameInput,
+    ]);
+
+    return {
+      field,
+      resolve: () => {
+        if (select.value === NEW_GROUP) {
+          const created = this.createGroup(nameInput.value);
+          return created ? created.id : null;
+        }
+        return select.value || null;
+      },
+    };
   }
 
   private renderCollectionView(): HTMLElement {
@@ -818,6 +1064,16 @@ export class CollectorApp {
           },
         }),
       );
+      // Groups can be set up before the first item arrives, so the empty state
+      // still offers the chip row and create form.
+      wrap.append(
+        el("div", { class: "cs-section" }, [
+          el("h3", { class: "cs-section__title", text: "Groups" }),
+          this.renderGroupChips(),
+          this.renderActiveGroupActions(),
+        ]),
+      );
+      append(wrap, this.renderGroupCreateForm());
       return wrap;
     }
 
@@ -881,6 +1137,15 @@ export class CollectorApp {
       ]),
     );
 
+    wrap.append(
+      el("div", { class: "cs-section" }, [
+        el("h3", { class: "cs-section__title", text: "Groups" }),
+        this.renderGroupChips(),
+        this.renderActiveGroupActions(),
+      ]),
+    );
+    append(wrap, this.renderGroupCreateForm());
+
     const host = el("div", { attrs: { id: "cs-list" } });
     this.listHost = host;
     this.fillCollection(host);
@@ -909,7 +1174,128 @@ export class CollectorApp {
     host.append(list);
   }
 
+  /**
+   * Group detail: the items filed here, plus rename and delete. Deleting a
+   * group deliberately keeps its items — it only clears their membership, so a
+   * tidy-up can never destroy collection data.
+   */
+  private renderGroupView(id: string): HTMLElement {
+    const group = this.groups.find((entry) => entry.id === id);
+    if (!group) {
+      return el("div", { class: "cs-detail" }, [
+        this.stateBlock("Group not found", "That group no longer exists."),
+        this.backButton("Back to collection"),
+      ]);
+    }
+
+    const members = this.items.filter((item) => item.groupId === group.id);
+    const { text, count } = this.collectionTotal(members);
+
+    const wrap = el("div", { class: "cs-detail" });
+    wrap.append(this.backButton("Back to collection"));
+
+    wrap.append(
+      el("section", { class: "cs-section" }, [
+        el("h3", { class: "cs-detail__title", text: group.name }),
+        el("p", {
+          class: "cs-detail__sub",
+          text:
+            count === 0
+              ? "No items in this group yet."
+              : `${count} ${count === 1 ? "item" : "items"}${text}`,
+        }),
+      ]),
+    );
+
+    if (members.length) {
+      const list = el("ul", { class: "cs-results" });
+      for (const item of members) list.append(el("li", {}, [this.renderItemCard(item)]));
+      wrap.append(el("section", { class: "cs-section" }, [list]));
+    } else {
+      wrap.append(
+        this.stateBlock(
+          "Nothing here yet",
+          "Find an item and pick this group when you save it, or change an existing item's group.",
+        ),
+      );
+    }
+
+    wrap.append(this.renderGroupSettings(group, members.length));
+    return wrap;
+  }
+
+  private renderGroupSettings(group: CollectionGroup, memberCount: number): HTMLElement {
+    const section = el("section", { class: "cs-section" });
+    section.append(el("h3", { class: "cs-section__title", text: "Group settings" }));
+
+    const name = el("input", {
+      class: "cs-input",
+      attrs: { id: "cs-group-name", type: "text", value: group.name, autocomplete: "off" },
+    });
+
+    const rename = (): void => {
+      const next = name.value.trim();
+      if (!next) return;
+      this.groups = this.groups.map((entry) =>
+        entry.id === group.id ? { ...entry, name: next, updatedAt: Date.now() } : entry,
+      );
+      this.persist();
+      this.session.flash = "Group renamed.";
+      this.render();
+      this.armFlash();
+    };
+
+    const form = el("form", { class: "cs-search__row" }, [
+      name,
+      el("button", { class: "cs-button", text: "Rename", attrs: { type: "submit" } }),
+    ]);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      rename();
+    });
+
+    section.append(form);
+
+    section.append(
+      el("button", {
+        class: "cs-button cs-button--danger cs-button--block",
+        text: "Delete group",
+        attrs: { type: "button" },
+        on: {
+          click: () => {
+            this.deleteGroup(group.id);
+          },
+        },
+      }),
+    );
+    section.append(
+      el("p", {
+        class: "cs-hint",
+        text:
+          memberCount > 0
+            ? `Deleting this group keeps its ${memberCount} ${memberCount === 1 ? "item" : "items"} — they just become ungrouped.`
+            : "This group has no items.",
+      }),
+    );
+
+    return section;
+  }
+
+  private deleteGroup(id: string): void {
+    const group = this.groups.find((entry) => entry.id === id);
+    if (!group) return;
+    this.groups = this.groups.filter((entry) => entry.id !== id);
+    this.items = this.items.map((item) => (item.groupId === id ? { ...item, groupId: null } : item));
+    if (this.session.collectionGroupFilter === id) this.session.collectionGroupFilter = "all";
+    this.persist();
+    this.session.flash = `Group “${group.name}” deleted. Items kept.`;
+    this.go("collection");
+    this.render();
+    this.armFlash();
+  }
+
   private renderItemCard(item: CollectionItem): HTMLElement {
+    const group = this.groupName(item.groupId);
     const meta = [
       CATEGORY_LABELS[item.category],
       item.condition,
@@ -929,6 +1315,22 @@ export class CollectorApp {
       thumbnail(item.imageUrl, CATEGORY_GLYPHS[item.category], item.title),
       el("div", { class: "cs-card__body" }, [
         el("p", { class: "cs-card__title", text: item.title }),
+        group
+          ? el("p", { class: "cs-item__group" }, [
+              el("button", {
+                class: "cs-grouptag",
+                text: group,
+                attrs: { type: "button" },
+                on: {
+                  click: () => {
+                    this.session.activeTab = "collection";
+                    this.go(`group/${encodeURIComponent(item.groupId as string)}`);
+                    this.render();
+                  },
+                },
+              }),
+            ])
+          : null,
         el("p", { class: "cs-card__meta", text: meta.join(" · ") }),
         el("p", { class: "cs-card__meta cs-item__value", text: valueLine }),
         el("div", { class: "cs-item__actions" }, [
@@ -1012,7 +1414,7 @@ export class CollectorApp {
   }
 
   private persist(): void {
-    const warning = this.store.save(this.items);
+    const warning = this.store.save(this.items, this.groups);
     if (warning && !this.session.warnings.includes(warning)) this.session.warnings.push(warning);
   }
 

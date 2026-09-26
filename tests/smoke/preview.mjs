@@ -36,7 +36,7 @@ const page = `<!doctype html>
 <style>html,body{margin:0;background:#0b0d12}</style></head>
 <body>
 <div id="host"></div>
-<pre id="nav" style="position:fixed;bottom:0;left:0;right:0;margin:0;padding:6px 10px;background:#000;color:#0f0;font:11px monospace;z-index:9"></pre>
+<pre id="nav" style="position:fixed;bottom:0;left:0;right:0;margin:0;padding:6px 10px;background:#000;color:#0f0;font:11px monospace;z-index:9;pointer-events:none"></pre>
 <script type="module">
 const source = ${JSON.stringify(bundleSource)};
 const OL = ${JSON.stringify(OL_DOCS)};

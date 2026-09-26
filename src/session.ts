@@ -3,6 +3,8 @@ import type { ScoredCandidate } from "./match.ts";
 
 export type Tab = "search" | "collection";
 export type SortKey = "recent" | "title" | "value" | "category";
+/** `"all"` and `"ungrouped"` are sentinels; anything else is a group id. */
+export type GroupFilter = string;
 
 /**
  * Activation-scoped UI state.
@@ -28,6 +30,9 @@ export interface AppSession {
   collectionQuery: string;
   collectionFilter: CategoryFilter;
   collectionSort: SortKey;
+  collectionGroupFilter: GroupFilter;
+  /** Whether the inline "new group" form is open in the collection view. */
+  groupFormOpen: boolean;
   favoritesOnly: boolean;
   /** One-shot message shown as a toast after a remount. */
   flash: string | null;
@@ -47,6 +52,8 @@ export function createSession(): AppSession {
     collectionQuery: "",
     collectionFilter: "all",
     collectionSort: "recent",
+    collectionGroupFilter: "all",
+    groupFormOpen: false,
     favoritesOnly: false,
     flash: null,
   };
@@ -66,6 +73,8 @@ export function clearSession(session: AppSession): void {
   session.collectionQuery = "";
   session.collectionFilter = "all";
   session.collectionSort = "recent";
+  session.collectionGroupFilter = "all";
+  session.groupFormOpen = false;
   session.favoritesOnly = false;
   session.flash = null;
 }

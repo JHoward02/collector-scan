@@ -154,6 +154,19 @@ export const styles = `
   color: var(--cs-accent-text);
   font-weight: 600;
 }
+/* Group names get long ("Sonic the Hedgehog Comics from Archie"), so this row
+   scrolls sideways on a phone instead of wrapping into a tall stack. */
+.cs-chips--scroll {
+  flex-wrap: nowrap;
+  margin: 0 -2px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.cs-chips--scroll::-webkit-scrollbar { display: none; }
+.cs-chips--scroll .cs-chip { flex: 0 0 auto; white-space: nowrap; }
+.cs-chip--new { border-style: dashed; }
 .cs-hint { color: var(--cs-muted); font-size: 12.5px; margin: 0; }
 
 /* ---------- cards / results ---------- */
@@ -185,6 +198,27 @@ export const styles = `
 }
 .cs-tag--score { color: var(--cs-text); font-variant-numeric: tabular-nums; }
 .cs-tag--muted { color: var(--cs-muted); font-style: italic; }
+.cs-tag--group {
+  border-color: var(--cs-accent);
+  color: var(--cs-accent);
+  font-weight: 600;
+}
+
+/* ---------- groups ---------- */
+.cs-item__group { margin: 0; }
+.cs-grouptag {
+  background: transparent;
+  border: 0;
+  color: var(--cs-accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 .cs-media {
   align-items: center;

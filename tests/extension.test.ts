@@ -616,3 +616,263 @@ describe("page mount", () => {
     expect(container.textContent).not.toContain("$0.00");
   });
 });
+
+/** Drives the search -> open match -> save flow, returning to the collection. */
+async function saveFirstMatch(
+  container: HTMLElement,
+  double: ReturnType<typeof createHostDouble>,
+  configure?: (root: HTMLElement) => void,
+): Promise<void> {
+  await double.open("collection", { container, path: "" });
+  typeSearch(container, "Watchmen");
+  submitSearch(container);
+  await vi.waitFor(() => expect(container.textContent).toContain("Watchmen"));
+  activeRoot(container).querySelector<HTMLButtonElement>(".cs-card--tappable")!.click();
+  await double.open("collection", {
+    container,
+    path: `candidate/${encodeURIComponent("openlibrary:/works/OL123W")}`,
+  });
+  await vi.waitFor(() => expect(container.textContent).toContain("Save to collection"));
+  configure?.(activeRoot(container));
+  activeRoot(container).querySelector<HTMLButtonElement>(".cs-button--block")!.click();
+  await double.open("collection", { container, path: "collection" });
+  await vi.waitFor(() => expect(container.textContent).toContain("My collection"));
+}
+
+/**
+ * The host double never disposes a mount, so roots accumulate in the container.
+ * Every assertion has to look at the newest root or it will read stale DOM.
+ */
+function activeRoot(container: HTMLElement): HTMLElement {
+  const roots = container.querySelectorAll<HTMLElement>(".cs-app");
+  return roots[roots.length - 1] ?? container;
+}
+
+/** Chooses "+ New group…" in a group picker and types the name. */
+function createGroupViaSelect(root: HTMLElement, prefix: string, name: string): void {
+  const select = root.querySelector<HTMLSelectElement>(`#${prefix}-group`)!;
+  select.value = "__new_group__";
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+  const input = root.querySelector<HTMLInputElement>(`#${prefix}-group-name`)!;
+  input.value = name;
+}
+
+function clickChip(root: HTMLElement, label: string): void {
+  const chip = [...root.querySelectorAll<HTMLButtonElement>(".cs-chip")].find((button) =>
+    button.textContent?.includes(label),
+  );
+  if (!chip) throw new Error(`chip not found: ${label}`);
+  chip.click();
+}
+
+/** Chip buttons do not expose ids, so read the persisted group instead. */
+function firstGroupId(): string {
+  const raw = JSON.parse(localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!);
+  return raw.groups[0].id;
+}
+
+describe("collection groups", () => {
+  it("creates a group while saving an item and files the item into it", async () => {
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+
+    await saveFirstMatch(container, double, (root) =>
+      createGroupViaSelect(root, "cs-add", "Sonic the Hedgehog Comics from Archie"),
+    );
+
+    const root = activeRoot(container);
+    // The new group is offered as a filter chip and named on the item card.
+    expect(root.textContent).toContain("Sonic the Hedgehog Comics from Archie (1)");
+    expect(root.querySelector(".cs-grouptag")?.textContent).toBe("Sonic the Hedgehog Comics from Archie");
+  });
+
+  it("filters the collection by group, keeping ungrouped items separate", async () => {
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+
+    // First item is ungrouped.
+    await saveFirstMatch(container, double);
+    expect(activeRoot(container).textContent).toContain("Ungrouped (1)");
+
+    // Second item goes into a new group.
+    await saveFirstMatch(container, double, (root) =>
+      createGroupViaSelect(root, "cs-add", "Sonic the Hedgehog Comics from Archie"),
+    );
+
+    clickChip(activeRoot(container), "Ungrouped");
+    let root = activeRoot(container);
+    expect(root.textContent).toContain("1 entry");
+    expect(root.querySelectorAll(".cs-grouptag")).toHaveLength(0);
+
+    clickChip(activeRoot(container), "Sonic the Hedgehog Comics from Archie");
+    root = activeRoot(container);
+    expect(root.textContent).toContain("1 entry");
+    expect(root.querySelectorAll(".cs-grouptag")).toHaveLength(1);
+
+    clickChip(activeRoot(container), "All");
+    expect(activeRoot(container).textContent).toContain("2 entries");
+  });
+
+  it("creates a group from the collection view before any item exists", async () => {
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+    await double.open("collection", { container, path: "collection" });
+
+    expect(activeRoot(container).textContent).toContain("Nothing tracked yet");
+
+    clickChip(activeRoot(container), "+ New group");
+    const root = activeRoot(container);
+    const input = root.querySelector<HTMLInputElement>("#cs-new-group-name")!;
+    input.value = "Sonic the Hedgehog Comics from Archie";
+    root.querySelector<HTMLFormElement>(".cs-search__row")!.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+
+    const after = activeRoot(container);
+    expect(after.textContent).toContain("Sonic the Hedgehog Comics from Archie");
+    // Still empty, but the group now exists.
+    expect(after.textContent).toContain("Nothing tracked yet");
+  });
+
+  it("lets an empty group be managed and deleted", async () => {
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+    await double.open("collection", { container, path: "collection" });
+
+    clickChip(activeRoot(container), "+ New group");
+    let root = activeRoot(container);
+    root.querySelector<HTMLInputElement>("#cs-new-group-name")!.value = "Sonic the Hedgehog Comics from Archie";
+    root.querySelector<HTMLFormElement>(".cs-search__row")!.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+
+    // An empty group has no item card to tap, so it needs its own way in.
+    root = activeRoot(container);
+    const manage = [...root.querySelectorAll<HTMLButtonElement>(".cs-button")].find((button) =>
+      button.textContent?.includes("Manage"),
+    );
+    expect(manage?.textContent).toContain("Sonic the Hedgehog Comics from Archie");
+
+    // Navigation is host-driven, so follow the same await pattern as other tests.
+    await double.open("collection", {
+      container,
+      path: `collection/group/${encodeURIComponent(firstGroupId())}`,
+    });
+    root = activeRoot(container);
+    expect(root.textContent).toContain("Group settings");
+    expect(root.textContent).toContain("This group has no items.");
+
+    [...root.querySelectorAll<HTMLButtonElement>(".cs-button--danger")]
+      .find((button) => button.textContent?.includes("Delete group"))!
+      .click();
+    await double.open("collection", { container, path: "collection" });
+
+    root = activeRoot(container);
+    expect(root.textContent).toContain("Nothing tracked yet");
+    expect(root.textContent).not.toContain("Sonic the Hedgehog Comics from Archie (");
+  });
+
+  it("renames a group from its detail view", async () => {
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+
+    await saveFirstMatch(container, double, (root) =>
+      createGroupViaSelect(root, "cs-add", "Sonic the Hedgehog Comics from Archie"),
+    );
+    const id = firstGroupId();
+
+    await double.open("collection", { container, path: `collection/group/${encodeURIComponent(id)}` });
+    let root = activeRoot(container);
+    expect(root.textContent).toContain("Group settings");
+
+    const name = root.querySelector<HTMLInputElement>("#cs-group-name")!;
+    name.value = "Sonic (Archie)";
+    root.querySelector<HTMLFormElement>(".cs-search__row")!.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+
+    root = activeRoot(container);
+    expect(root.textContent).toContain("Sonic (Archie)");
+    expect(root.textContent).not.toContain("from Archie");
+  });
+
+  it("deletes a group but keeps its items as ungrouped", async () => {
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+
+    await saveFirstMatch(container, double, (root) =>
+      createGroupViaSelect(root, "cs-add", "Sonic the Hedgehog Comics from Archie"),
+    );
+    const id = firstGroupId();
+
+    await double.open("collection", { container, path: `collection/group/${encodeURIComponent(id)}` });
+    [...activeRoot(container).querySelectorAll<HTMLButtonElement>(".cs-button--danger")]
+      .find((button) => button.textContent?.includes("Delete group"))!
+      .click();
+    await double.open("collection", { container, path: "collection" });
+
+    // The item survives; only its membership is cleared. The toast names the
+    // deleted group, so check the chips and card rather than the whole view.
+    const root = activeRoot(container);
+    expect(root.textContent).toContain("Watchmen");
+    expect(root.textContent).toContain("Ungrouped (1)");
+    expect(root.querySelector(".cs-grouptag")).toBeNull();
+    const chips = [...root.querySelectorAll<HTMLButtonElement>(".cs-chip")].map((b) => b.textContent ?? "");
+    expect(chips.some((label) => label.includes("from Archie"))).toBe(false);
+
+    const raw = JSON.parse(localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!);
+    expect(raw.groups).toHaveLength(0);
+    expect(raw.items).toHaveLength(1);
+    expect(raw.items[0].groupId).toBeNull();
+  });
+
+  it("revives a legacy payload that predates groups", async () => {
+    // Payload written by the previous version: no `groups` key at all.
+    localStorage.setItem(
+      "openhands:apps:collector-scan:local-test:collection:v1",
+      JSON.stringify({
+        schemaVersion: 1,
+        items: [{ id: "legacy-1", title: "Watchmen", category: "comic" }],
+      }),
+    );
+
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+    await double.open("collection", { container, path: "collection" });
+
+    // The pre-existing item still loads, and is treated as ungrouped.
+    const root = activeRoot(container);
+    expect(root.textContent).toContain("Watchmen");
+    expect(root.textContent).toContain("Ungrouped (1)");
+    expect(root.querySelector(".cs-grouptag")).toBeNull();
+  });
+
+  it("drops membership pointing at a group that no longer exists", async () => {
+    localStorage.setItem(
+      "openhands:apps:collector-scan:local-test:collection:v1",
+      JSON.stringify({
+        schemaVersion: 1,
+        items: [{ id: "orphan-1", title: "Watchmen", category: "comic", groupId: "deleted-group" }],
+        groups: [{ id: "kept-group", name: "Sonic the Hedgehog Comics from Archie" }],
+      }),
+    );
+
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+    await double.open("collection", { container, path: "collection" });
+
+    // The item is still listed rather than hidden behind a missing group.
+    const root = activeRoot(container);
+    expect(root.textContent).toContain("Watchmen");
+    expect(root.querySelector(".cs-grouptag")).toBeNull();
+    expect(root.textContent).toContain("Sonic the Hedgehog Comics from Archie (0)");
+  });
+});
