@@ -6,7 +6,7 @@
   "description": "Canvas App for quickly looking up and tracking a collector's collection.",
   "scripts": {
     "build": "vite build",
-    "build:web": "vite build --outDir dist-web --base=/collector-scan/",
+    "build:web": "vite build --config vite.web.config.ts",
     "sync": "npm run build && node scripts/sync-entrypoint.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
