@@ -2,7 +2,7 @@ name: Deploy Collector Scan to GitHub Pages
 
 on:
   push:
-    branches: [initial-import]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
