@@ -7,6 +7,17 @@ if (!root) throw new Error("Missing #app root");
 let mountPage: CanvasExtensionPageMount | null = null;
 let cleanup: void | (() => void);
 
+function dismissSplash(): void {
+  const splash = document.querySelector<HTMLElement>("#shelfie-splash");
+  if (!splash) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.setTimeout(() => {
+    splash.classList.add("is-leaving");
+    document.documentElement.classList.remove("shelfie-splash-active");
+    window.setTimeout(() => splash.remove(), reduced ? 0 : 450);
+  }, reduced ? 500 : 2550);
+}
+
 function routePath(): string {
   const hash = location.hash.replace(/^#\/?/, "");
   return hash || "";
@@ -30,7 +41,7 @@ async function render(): Promise<void> {
 
 const host: CanvasExtensionHost = {
   apiVersion: "1",
-  extension: { name: "collector-scan", version: "0.1.0", resolvedRef: null },
+  extension: { name: "collector-scan", version: "0.3.0", resolvedRef: null },
   backend: { id: "standalone", kind: "local", orgId: null },
   registerPage(_contributionId, mount) {
     mountPage = mount;
@@ -55,4 +66,5 @@ const host: CanvasExtensionHost = {
 };
 
 extension.activate(host);
+dismissSplash();
 window.addEventListener("hashchange", () => void render());
