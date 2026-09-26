@@ -1,13 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="shelfie-splash-active">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#111827" />
+    <meta name="theme-color" content="#050505" />
     <title>Shelfie</title>
     <link rel="stylesheet" href="/collector-scan/shelfie-brand.css" />
+    <link rel="stylesheet" href="/collector-scan/shelfie-splash.css" />
   </head>
   <body>
+    <div class="shelfie-splash" id="shelfie-splash" aria-label="Shelfie loading" role="status">
+      <div class="shelfie-splash__stage">
+        <div class="shelfie-splash__glow"></div>
+        <i class="shelfie-splash__stroke shelfie-splash__stroke--1"></i>
+        <i class="shelfie-splash__stroke shelfie-splash__stroke--2"></i>
+        <i class="shelfie-splash__stroke shelfie-splash__stroke--3"></i>
+        <i class="shelfie-splash__stroke shelfie-splash__stroke--4"></i>
+        <img class="shelfie-splash__logo" src="/collector-scan/LogoV3.png" alt="Shelfie" />
+      </div>
+    </div>
     <main id="app"></main>
     <script type="module" src="/src/standalone.ts"></script>
   </body>
