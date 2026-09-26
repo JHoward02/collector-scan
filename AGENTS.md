@@ -64,3 +64,14 @@ parameter and the assertion in the request-shape test.
 - The header/list totals prefer recorded estimated values but fall back to
   price paid, so a collection with only purchase prices never reads `$0.00`.
 - Single-keyword queries are capped below "Strong match" via `resultTokens`.
+
+## Repository access
+
+- The workspace `GITHUB_TOKEN` is a GitHub App installation token with
+  read-only access to `JHoward02/collector-scan`. It can read refs and PRs but
+  cannot create refs or push (`403 Resource not accessible by integration`).
+  Commit locally and report the branch; a human must push.
+- The existing PR is #1 (`initial-import` -> `main`). Push new work to
+  `initial-import` rather than opening another PR.
+- Group links are page-relative (`group/<id>`), so `resolveView()` must accept
+  both that and the absolute `collection/group/<id>` form.
