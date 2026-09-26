@@ -67,11 +67,16 @@ parameter and the assertion in the request-shape test.
 
 ## Repository access
 
-- The workspace `GITHUB_TOKEN` is a GitHub App installation token with
-  read-only access to `JHoward02/collector-scan`. It can read refs and PRs but
-  cannot create refs or push (`403 Resource not accessible by integration`).
-  Commit locally and report the branch; a human must push.
+- The workspace `GITHUB_TOKEN` is a GitHub App user-to-server token (`ghu_`).
+  Write access requires the OpenHands AI app to be *installed* on the
+  repository, not merely authorized. Authorization alone grants account-level
+  access and cannot write; public repos are still readable either way, which
+  makes the failure look like a scope problem when it is an installation
+  problem. Verify with a ref-creation probe rather than assuming.
 - The existing PR is #1 (`initial-import` -> `main`). Push new work to
   `initial-import` rather than opening another PR.
+- `git push` over HTTPS needs the token inline; the bare remote prompts for a
+  username and hangs. Use
+  `git push "https://x-access-token:${GITHUB_TOKEN}@github.com/OWNER/REPO.git" BRANCH`.
 - Group links are page-relative (`group/<id>`), so `resolveView()` must accept
   both that and the absolute `collection/group/<id>` form.
