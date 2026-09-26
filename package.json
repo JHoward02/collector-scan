@@ -1,0 +1,24 @@
+{
+  "name": "collector-scan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Canvas App for quickly looking up and tracking a collector's collection.",
+  "scripts": {
+    "build": "vite build",
+    "build:web": "vite build --outDir dist-web --base=/collector-scan/",
+    "sync": "npm run build && node scripts/sync-entrypoint.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "smoke": "node tests/smoke/blob-smoke.mjs",
+    "validate": "node scripts/validate-extension.mjs .",
+    "validate:dist": "node scripts/validate-extension.mjs . --dist --marker \"registerPage\"",
+    "check": "npm run typecheck && npm run test && npm run sync && npm run validate && npm run validate:dist && npm run smoke"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "3.2.7"
+  }
+}

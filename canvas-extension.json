@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "name": "collector-scan",
+  "display_name": "Collector Scan",
+  "version": "0.1.0",
+  "description": "Look up comics, sports cards, books, and collectibles on the web and keep a fast, offline-first collection on your phone.",
+  "entrypoint": "extension.js",
+  "contributes": {
+    "pages": [
+      {
+        "id": "collection",
+        "title": "Collector Scan",
+        "path": "/collection",
+        "nav_label": "Collector Scan",
+        "description": "Search, match, and track your collection."
+      }
+    ]
+  }
+}
