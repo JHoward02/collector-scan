@@ -1,0 +1,45 @@
+.cs-app .cs-header {
+  padding-top: 8px;
+}
+
+.cs-app .cs-header__row {
+  align-items: center;
+  min-height: 112px;
+}
+
+.cs-app .cs-title {
+  background: url("/collector-scan/ChatGPT Image Sep 26, 2026, 02_23_15 PM.png") left center / contain no-repeat;
+  display: block;
+  flex: 1 1 auto;
+  font-size: 0;
+  height: 108px;
+  margin: 0;
+  max-width: 470px;
+  min-width: 280px;
+  overflow: hidden;
+  text-indent: -9999px;
+}
+
+.cs-app .cs-subtitle {
+  margin-top: 0;
+}
+
+@media (max-width: 620px) {
+  .cs-app .cs-header__row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cs-app .cs-title {
+    background-position: center;
+    height: 92px;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .cs-app .cs-count {
+    align-self: flex-end;
+  }
+}
