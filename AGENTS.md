@@ -58,6 +58,37 @@ parameter and the assertion in the request-shape test.
 - A screenshot whose hash is unchanged across reloads usually means the harness
   is serving stale or unchanged data, not that the app ignored a fix.
 
+## Theming
+
+Brand is "Vault": warm amber (`--cs-accent`) on ink, with teal
+(`--cs-group`) reserved for grouping. Amber reads as collectible — newsprint,
+slab labels, dealer-case light — where the previous indigo read as generic
+product UI. Grouping is teal rather than amber so membership is distinguishable
+from primary actions at a glance.
+
+- Dark is the unconditional base rule and the default. Light lives behind
+  `@media (prefers-color-scheme: light)` guarded by `:not([data-theme="dark"])`,
+  plus an explicit `.cs-app[data-theme="light"]` for forcing. Set
+  `data-theme` on the app root to pin either one.
+- `--cs-amber` / `--cs-teal` / `--cs-teal-deep` are the raw brand values;
+  themes map them onto semantic tokens. Light redefines the semantic tokens
+  only, so it inherits the raw palette from the base rule.
+- The app paints its own ground rather than inheriting host `--background` /
+  `--card`. Outside Canvas there are no host variables, and the collection
+  should look deliberate there too. Only `--primary` / `--primary-foreground`
+  are honoured, as accent hints. Do not route `--cs-group` through
+  `--primary`: grouping must stay teal even when a host overrides the accent.
+- `--cs-border-strong` is the interactive-control border and must clear 3:1
+  against `--cs-bg` (WCAG 1.4.11). `--cs-border` is decorative only and is
+  intentionally too low-contrast for a control outline. Use `border-strong` on
+  inputs, chips, and ghost buttons.
+- Card surfaces must stay 1.1–1.25 apart from `--cs-bg`; flatter than that and
+  cards read as a continuation of the background, especially in light mode.
+- The `brand palette` test block in `tests/extension.test.ts` computes real
+  WCAG contrast from the stylesheet text, so a token change that breaks
+  legibility fails the suite. It resolves `var()` fallbacks itself; keep tokens
+  as plain hex (no `color-mix`, no `oklch`) or the resolver will not see them.
+
 ## Conventions
 
 - Money is stored as numbers; `money()` renders `—` for null and

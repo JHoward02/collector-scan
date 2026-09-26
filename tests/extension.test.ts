@@ -1,7 +1,113 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { activate } from "../src/extension.ts";
 import { confidenceLabel } from "../src/match.ts";
+import { styles } from "../src/styles.ts";
 import { createHostDouble, jsonResponse } from "./host-double.ts";
+
+describe("brand palette", () => {
+  const blockFor = (selector: string): string => {
+    const start = styles.indexOf(selector);
+    expect(start, `missing theme block: ${selector}`).toBeGreaterThan(-1);
+    return styles.slice(start, styles.indexOf("}", start));
+  };
+
+  /** WCAG relative luminance. */
+  const luminance = (hex: string): number => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const f = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  };
+  const contrast = (a: string, b: string): number => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+
+  /**
+   * Resolves a token the way the browser would without a host: follow an
+   * internal `var(--cs-*)` reference, otherwise take the last hex fallback.
+   * `--cs-accent: var(--primary, var(--cs-amber))` therefore yields the amber.
+   */
+  const token = (block: string, name: string, depth = 0): string => {
+    const decls = new Map<string, string>();
+    for (const match of block.matchAll(/--cs-([a-z0-9-]+):\s*([^;]+);/g)) {
+      decls.set(match[1], match[2].trim());
+    }
+    const raw = decls.get(name);
+    expect(raw, `missing --cs-${name}`).toBeDefined();
+    if (depth > 8) throw new Error(`circular token: --cs-${name}`);
+
+    const internal = raw!.match(/var\(\s*--cs-([a-z0-9-]+)/);
+    if (internal) return token(block, internal[1], depth + 1);
+
+    const hexes = raw!.match(/#[0-9a-f]{6}/g);
+    expect(hexes, `no hex value for --cs-${name}: ${raw}`).not.toBeNull();
+    return hexes![hexes!.length - 1];
+  };
+
+  // The dark rule doubles as the shared brand palette (it defines the raw
+  // amber/teal values every theme builds on), so light layers on top of it.
+  const base = blockFor('.cs-app,\n.cs-app[data-theme="dark"]');
+  const themes = [
+    { label: "dark", block: base },
+    { label: "light", block: `${base}\n${blockFor('.cs-app[data-theme="light"]')}` },
+  ];
+
+  it.each(themes)("keeps $label text legible on every surface", ({ block }) => {
+    const surfaces = [token(block, "bg"), token(block, "surface"), token(block, "surface-2")];
+    for (const surface of surfaces) {
+      expect(contrast(token(block, "text"), surface)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(token(block, "muted"), surface)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(themes)("keeps $label accent and group colours legible", ({ block }) => {
+    for (const surface of [token(block, "bg"), token(block, "surface")]) {
+      expect(contrast(token(block, "accent"), surface)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(token(block, "group"), surface)).toBeGreaterThanOrEqual(4.5);
+    }
+    // Buttons and active chips put accent-text on an accent fill.
+    expect(contrast(token(block, "accent-text"), token(block, "accent"))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(themes)("keeps $label control borders visible", ({ block }) => {
+    // WCAG 1.4.11 wants 3:1 for the boundary of an interactive control. Inputs
+    // sit on --cs-bg, so that is the surface that matters here.
+    expect(contrast(token(block, "border-strong"), token(block, "bg"))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(themes)("separates $label cards from the page ground", ({ block }) => {
+    // Below ~1.1 a card reads as a flat continuation of the background.
+    const separation = contrast(token(block, "surface"), token(block, "bg"));
+    expect(separation).toBeGreaterThanOrEqual(1.1);
+    expect(separation).toBeLessThanOrEqual(1.25);
+  });
+
+  it("uses the amber/teal brand rather than the previous indigo", () => {
+    expect(styles).toContain("--cs-amber: #f5a524");
+    expect(styles).toContain("--cs-teal: #2dd4bf");
+    expect(styles).not.toContain("#4f46e5");
+  });
+
+  it("lets the OS preference choose a theme but keeps dark the default", () => {
+    // Dark must not be inside a media query: it is the unconditional base.
+    const darkIndex = styles.indexOf('.cs-app,\n.cs-app[data-theme="dark"]');
+    const mediaIndex = styles.indexOf("@media (prefers-color-scheme: light)");
+    expect(mediaIndex).toBeGreaterThan(darkIndex);
+    expect(styles).toContain(".cs-app:not([data-theme=\"dark\"])");
+  });
+
+  it("honours a host-provided primary colour without losing the brand", () => {
+    expect(styles).toContain("--cs-accent: var(--primary,");
+    expect(styles).toContain("--cs-group: var(--cs-teal)");
+    // Grouping must stay teal even when the host overrides the accent.
+    expect(styles).not.toContain("--cs-group: var(--primary");
+  });
+
+  it("declares the colour scheme so native controls match", () => {
+    expect(styles).toContain("color-scheme: dark");
+    expect(styles).toContain("color-scheme: light");
+  });
+});
 
 describe("confidenceLabel", () => {
   it("bands a well-specified query by score", () => {
