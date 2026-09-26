@@ -1,0 +1,89 @@
+html.shelfie-splash-active,
+html.shelfie-splash-active body { overflow: hidden; }
+
+.shelfie-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #050505;
+  opacity: 1;
+  transition: opacity .42s ease;
+}
+.shelfie-splash.is-leaving { opacity: 0; pointer-events: none; }
+.shelfie-splash__stage {
+  position: relative;
+  width: min(92vw, 1280px);
+  aspect-ratio: 16 / 6;
+  display: grid;
+  place-items: center;
+}
+.shelfie-splash__logo {
+  position: relative;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+  animation: shelfieLogoReveal 1.8s cubic-bezier(.3,.05,.2,1) .2s forwards;
+  filter: drop-shadow(0 12px 22px rgba(0,0,0,.65));
+}
+.shelfie-splash__stroke {
+  position: absolute;
+  z-index: 2;
+  left: -8%;
+  width: 116%;
+  height: 20%;
+  border-radius: 50% 18% 45% 20% / 40% 55% 35% 60%;
+  opacity: 0;
+  transform: translateX(-105%) skewX(-12deg) rotate(var(--rot));
+  transform-origin: center;
+  background: linear-gradient(90deg, transparent 0 2%, var(--paint) 8% 88%, transparent 100%);
+  filter: saturate(1.15);
+  mix-blend-mode: screen;
+  animation: shelfieBrush 1.05s cubic-bezier(.2,.7,.25,1) var(--delay) forwards;
+}
+.shelfie-splash__stroke::before,
+.shelfie-splash__stroke::after {
+  content: "";
+  position: absolute;
+  inset: 18% 1% auto 0;
+  height: 18%;
+  background: var(--paint);
+  opacity: .7;
+  border-radius: 50%;
+  transform: translateY(-150%);
+}
+.shelfie-splash__stroke::after { inset: auto 5% 12% 3%; transform: translateY(140%); opacity: .5; }
+.shelfie-splash__stroke--1 { top: 13%; --paint:#ffd400; --delay:.05s; --rot:-3deg; }
+.shelfie-splash__stroke--2 { top: 39%; --paint:#f22929; --delay:.30s; --rot:2deg; animation-direction: normal; }
+.shelfie-splash__stroke--3 { top: 64%; --paint:#168eea; --delay:.55s; --rot:-2deg; }
+.shelfie-splash__stroke--4 { top: 31%; --paint:#ffd400; --delay:.82s; --rot:1deg; height:12%; }
+.shelfie-splash__glow {
+  position:absolute; inset:15% 5%; z-index:1;
+  background: radial-gradient(ellipse, rgba(255,212,0,.11), transparent 60%);
+  opacity:0; animation:shelfieGlow .8s ease 1.25s forwards;
+}
+@keyframes shelfieBrush {
+  0% { opacity:0; transform:translateX(-105%) skewX(-12deg) rotate(var(--rot)) scaleX(.8); }
+  12% { opacity:.92; }
+  70% { opacity:.78; }
+  100% { opacity:0; transform:translateX(105%) skewX(-12deg) rotate(var(--rot)) scaleX(1); }
+}
+@keyframes shelfieLogoReveal {
+  0% { opacity:0; clip-path:polygon(0 0,0 0,0 100%,0 100%); }
+  10% { opacity:1; }
+  28% { clip-path:polygon(0 0,35% 0,27% 100%,0 100%); }
+  52% { clip-path:polygon(0 0,62% 0,54% 100%,0 100%); }
+  76% { clip-path:polygon(0 0,84% 0,78% 100%,0 100%); }
+  100% { opacity:1; clip-path:polygon(0 0,100% 0,100% 100%,0 100%); }
+}
+@keyframes shelfieGlow { to { opacity:1; } }
+@media (prefers-reduced-motion: reduce) {
+  .shelfie-splash__stroke { display:none; }
+  .shelfie-splash__logo { animation:none; opacity:1; clip-path:none; }
+}
