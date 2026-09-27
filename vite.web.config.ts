@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: "/collector-scan/",
+  base: "./",
   build: {
     outDir: "dist-web",
     emptyOutDir: true,

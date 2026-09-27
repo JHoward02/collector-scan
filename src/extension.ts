@@ -30,7 +30,7 @@ function enhanceLogoHome(container: HTMLElement, goHome: () => void): void {
     logo.replaceChildren();
     image = document.createElement("img");
     image.className = "cs-title__logo";
-    image.src = "/collector-scan/LogoV3.png?v=logo-real-1";
+    image.src = `${import.meta.env.BASE_URL}LogoV3.png?v=logo-real-1`;
     image.alt = "Shelfie";
     image.decoding = "async";
     image.draggable = false;
