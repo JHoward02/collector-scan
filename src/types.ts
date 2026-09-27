@@ -6,7 +6,7 @@ export const CATEGORIES = [
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 export type CategoryFilter = Category | "all";
-export type ProviderId = "openlibrary" | "wikipedia";
+export type ProviderId = "openlibrary" | "wikipedia" | "cardlists";
 
 export interface DetailRow {
   label: string;

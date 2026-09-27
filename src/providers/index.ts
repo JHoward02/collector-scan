@@ -1,29 +1,50 @@
-import type { Candidate, SearchQuery } from "../types.ts";
+import type { Candidate, Category, SearchQuery } from "../types.ts";
 import { rankCandidates, type ScoredCandidate } from "../match.ts";
+import { cardListsProvider } from "./cardlists.ts";
 import { openLibraryProvider } from "./openlibrary.ts";
 import { wikipediaProvider } from "./wikipedia.ts";
 import { ProviderError, type Provider } from "./types.ts";
 
-export const PROVIDERS: Provider[] = [wikipediaProvider, openLibraryProvider];
+export const PROVIDERS: Provider[] = [cardListsProvider, wikipediaProvider, openLibraryProvider];
 
 export interface SearchOutcome {
   results: ScoredCandidate[];
   warnings: string[];
-  /** Set when every provider failed; results may still be empty. */
+  /** Set when every selected provider failed; results may still be empty. */
   error: string | null;
 }
 
 /**
- * Query every provider in parallel. A provider that fails degrades to a warning
- * so one outage never hides the results another provider returned.
+ * Query only providers that support the type the user explicitly selected.
+ * No type means no network calls.
  */
 export async function searchAll(
   query: SearchQuery,
-  signal: AbortSignal,
+  categoryOrSignal: Category | AbortSignal,
+  maybeSignal?: AbortSignal,
   providers: Provider[] = PROVIDERS,
 ): Promise<SearchOutcome> {
+  // Backward-compatible guard while the search UI is migrated: the old
+  // two-argument call is deliberately blocked rather than broadcasting to all
+  // providers. This guarantees that an untyped search cannot spend API quota.
+  if (categoryOrSignal instanceof AbortSignal) {
+    return {
+      results: [],
+      warnings: [],
+      error: "Choose a type first. Select what you're adding to your Shelfie so we know where to search.",
+    };
+  }
+
+  const category = categoryOrSignal;
+  const signal = maybeSignal as AbortSignal;
+  const selectedProviders = providers.filter((provider) => provider.categories.includes(category));
+  if (!selectedProviders.length) {
+    return { results: [], warnings: [], error: `No lookup provider is configured for ${category}.` };
+  }
+
+  const typedQuery: SearchQuery = { ...query, category };
   const settled = await Promise.allSettled(
-    providers.map((provider) => provider.search(query, signal)),
+    selectedProviders.map((provider) => provider.search(typedQuery, signal)),
   );
 
   if (signal.aborted) return { results: [], warnings: [], error: null };
@@ -33,22 +54,19 @@ export async function searchAll(
   const failures: string[] = [];
 
   settled.forEach((outcome, index) => {
-    const provider = providers[index];
+    const provider = selectedProviders[index];
     if (outcome.status === "fulfilled") {
       collected.push(...outcome.value.candidates);
       if (outcome.value.warning) warnings.push(`${provider.label}: ${outcome.value.warning}`);
     } else {
       const reason = outcome.reason;
-      const message =
-        reason instanceof ProviderError
-          ? reason.message
-          : "Lookup service unavailable.";
+      const message = reason instanceof ProviderError ? reason.message : "Lookup service unavailable.";
       failures.push(`${provider.label}: ${message}`);
     }
   });
 
-  const error = failures.length === providers.length ? failures.join(" ") : null;
+  const error = failures.length === selectedProviders.length ? failures.join(" ") : null;
   if (failures.length && !error) warnings.push(...failures);
 
-  return { results: rankCandidates(query, collected), warnings, error };
+  return { results: rankCandidates(typedQuery, collected), warnings, error };
 }
