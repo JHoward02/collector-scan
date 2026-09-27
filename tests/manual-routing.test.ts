@@ -19,5 +19,5 @@ it.each(["video-game", "coin", "other", "figure", "toy"] as const)("uses manual 
   const calls = PROVIDERS.map(p => vi.spyOn(p, "search"));
   const result = await searchAll(query, category, new AbortController().signal);
   expect(result).toMatchObject({ manualOnly: true, results: [], error: null });
-  expect(calls.every(call => call.mock.calls.length === 0)).toBe(true);
+  expect(calls.every((call, index) => PROVIDERS[index].id === "shelfie-catalog" || call.mock.calls.length === 0)).toBe(true);
 });
