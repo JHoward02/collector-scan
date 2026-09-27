@@ -5,7 +5,7 @@ const STORAGE_KEY = "openhands:apps:collector-scan:standalone:collection:v1";
 const categoryMap: Record<string, string> = {
   Comics: "comic", TCG: "tcg", "Sports cards": "sports-card", Books: "book",
   "Video games": "video-game", Figures: "figure", Toys: "toy", Coins: "coin",
-  Vinyl: "vinyl", Other: "other",
+  Vinyl: "vinyl", Sneakers: "sneaker", Other: "other",
 };
 
 function selectedCategory(): string {
@@ -83,7 +83,7 @@ function openManual(): void {
     <p style="margin:0;color:#555">Save privately to this device, or propose the item for Shelfie's shared catalog. Catalog proposals open on GitHub, require a GitHub account, and appear in search after review.</p>
     <label>Title / name<input required name="title" value="${query.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!))}" class="cs-input" style="width:100%;margin-top:5px"></label>
     <label>Type<select name="category" class="cs-select" style="width:100%;margin-top:5px">
-      <option value="comic">Comic</option><option value="tcg">TCG</option><option value="sports-card">Sports card</option><option value="book">Book</option><option value="video-game">Video game</option><option value="figure">Figure</option><option value="toy">Toy</option><option value="coin">Coin</option><option value="vinyl">Vinyl</option><option value="other">Other</option>
+      <option value="comic">Comic</option><option value="tcg">TCG</option><option value="sports-card">Sports card</option><option value="book">Book</option><option value="video-game">Video game</option><option value="figure">Figure</option><option value="toy">Toy</option><option value="coin">Coin</option><option value="vinyl">Vinyl</option><option value="sneaker">Sneaker</option><option value="other">Other</option>
     </select></label>
     <label>Year <span style="color:#777">(optional)</span><input name="year" type="number" min="1000" max="2100" class="cs-input" style="width:100%;margin-top:5px"></label>
     <label>Maker / publisher / artist <span style="color:#777">(optional)</span><input name="maker" class="cs-input" style="width:100%;margin-top:5px"></label>

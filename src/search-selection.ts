@@ -22,7 +22,7 @@ export function enhanceSearchSelection(root:HTMLElement):void{const form=root.qu
 function enhanceRefresh(root:HTMLElement){root.querySelectorAll("[data-shelfie-search-selection],[data-shelfie-tcg-selection],[data-shelfie-figure-selection],[data-shelfie-toy-selection],[data-shelfie-die-cast-selection],[data-shelfie-manual-selection]").forEach(n=>n.remove());enhanceSearchSelection(root);}export function clearSearchSelection(){category=null;tcgGame=null;figureLine=null;toyLine=null;dieCastBrand=null;}
 
 export function manualOnlySelection(): boolean {
-  return category === "video-game" || category === "coin" || category === "other" ||
+  return category === "video-game" || category === "coin" || category === "sneaker" || category === "other" ||
     (category === "tcg" && tcgGame === "other") ||
     (category === "figure" && !!figureLine && figureLine !== "amiibo" && figureLine !== "funko-pop") ||
     (category === "toy" && !!toyLine && toyLine !== "die-cast");

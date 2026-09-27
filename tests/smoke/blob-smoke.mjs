@@ -11,13 +11,18 @@
  */
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const bundlePath = path.join(root, "dist", "extension.js");
-const chromePath = process.env.CHROME_PATH || "/usr/bin/chromium";
+const chromePath = process.env.CHROME_PATH || ["/usr/bin/chromium", "/usr/bin/google-chrome", "/usr/bin/chromium-browser"].find(p => spawnSync("test", ["-x", p]).status === 0);
+if (!chromePath) {
+  console.log("Chromium unavailable; running built-artifact jsdom smoke instead.");
+  const fallback = spawnSync(process.execPath, [path.join(root, "tests/smoke/jsdom-smoke.mjs")], { stdio: "inherit" });
+  process.exit(fallback.status ?? 1);
+}
 
 try {
   await stat(bundlePath);

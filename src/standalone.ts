@@ -6,6 +6,7 @@ import type { CanvasExtensionHost, CanvasExtensionPageMount } from "./host.ts";
 
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Missing #app root");
+const appRoot: HTMLElement = root;
 
 let mountPage: CanvasExtensionPageMount | null = null;
 let cleanup: void | (() => void);
@@ -38,15 +39,15 @@ function routePath(): string {
 
 function mountFooter(): void {
   document.querySelector(".cs-footer")?.remove();
-  root.insertAdjacentElement("afterend", renderFooter());
+  appRoot.insertAdjacentElement("afterend", renderFooter());
 }
 
 async function render(): Promise<void> {
   if (!mountPage) return;
   if (typeof cleanup === "function") cleanup();
-  root.replaceChildren();
+  appRoot.replaceChildren();
   cleanup = await mountPage({
-    container: root,
+    container: appRoot,
     path: routePath(),
     navigate(path: string) {
       const marker = "/collection";

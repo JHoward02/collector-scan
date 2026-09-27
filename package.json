@@ -9,7 +9,7 @@
     "build:web": "vite build --config vite.web.config.ts",
     "sync": "npm run build && node scripts/sync-entrypoint.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && node --test tests/catalog-submission.test.mjs",
     "smoke": "node tests/smoke/blob-smoke.mjs",
     "validate": "node scripts/validate-extension.mjs .",
     "validate:dist": "node scripts/validate-extension.mjs . --dist --marker \"registerPage\"",

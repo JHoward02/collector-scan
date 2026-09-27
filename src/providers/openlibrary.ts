@@ -14,7 +14,7 @@ function sanitizeQuery(raw:string):string{return raw.replace(/[#"']/g," ").repla
 function toCandidate(doc:unknown,requestedIsbn:string|null):Candidate|null{
   const record=asRecord(doc);if(!record)return null;const title=asString(record.title);if(!title)return null;
   const workKey=asString(record.key);const editionKeys=strings(record.edition_key);const coverEditionKey=asString(record.cover_edition_key);
-  const authors=strings(record.author_name),publishers=strings(record.publisher),isbns=strings(record.isbn).map(cleanIsbn),languages=strings(record.language),subjects=strings(record.subject);
+  const authors=strings(record.author_name),publishers=strings(record.publisher),isbns=strings(record.isbn).map(cleanIsbn),languages=strings(record.language);
   const publishYears=asArray(record.publish_year).map(asNumber).filter((v):v is number=>v!=null);const firstYear=asNumber(record.first_publish_year);
   const pages=asNumber(record.number_of_pages_median),editions=asNumber(record.edition_count),coverId=asNumber(record.cover_i),subtitle=asString(record.subtitle),firstSentence=asString(record.first_sentence);
   const matchedIsbn=requestedIsbn&&isbns.includes(requestedIsbn)?requestedIsbn:(isbns.find((v)=>v.length===13)??isbns[0]??null);

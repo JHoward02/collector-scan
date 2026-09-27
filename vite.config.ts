@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 
 // Library build: exactly one self-contained browser ESM entrypoint at dist/extension.js.
 export default defineConfig({
+  publicDir: false,
   build: {
     assetsInlineLimit: Number.MAX_SAFE_INTEGER,
     cssCodeSplit: false,

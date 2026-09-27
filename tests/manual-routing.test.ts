@@ -6,7 +6,7 @@ import { parseQuery } from "../src/query.ts";
 const query = parseQuery("test collectible");
 afterEach(() => { clearSearchSelection(); vi.restoreAllMocks(); });
 
-it.each(["video-game", "coin", "other", "figure", "toy"] as const)("uses manual entry for %s without a dedicated source", async (category) => {
+it.each(["video-game", "coin", "sneaker", "other", "figure", "toy"] as const)("uses manual entry for %s without a dedicated source", async (category) => {
   // Figure and toy selections are set through the same UI state as the app.
   if (category === "figure" || category === "toy") {
     document.body.innerHTML = '<div><form role="search"></form></div>';

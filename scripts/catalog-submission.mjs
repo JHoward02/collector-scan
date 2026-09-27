@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
-const categories = new Set(["comic", "tcg", "sports-card", "book", "video-game", "figure", "toy", "coin", "vinyl", "other"]);
+const categories = new Set(["comic", "tcg", "sports-card", "book", "video-game", "figure", "toy", "coin", "vinyl", "sneaker", "other"]);
 
 export function parseSubmission(issue) {
   if (!Number.isSafeInteger(issue?.number) || !/^https:\/\/github\.com\/JHoward02\/collector-scan\/issues\/\d+$/.test(issue?.html_url ?? "")) {

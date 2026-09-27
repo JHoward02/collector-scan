@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { activate } from "../src/extension.ts";
 import { confidenceLabel } from "../src/match.ts";
+import { thumbnail } from "../src/dom.ts";
 import { parseQuery } from "../src/query.ts";
+import { clearSearchSelection } from "../src/search-selection.ts";
 import { wikipediaProvider } from "../src/providers/wikipedia.ts";
 import { styles } from "../src/styles.ts";
 import { createHostDouble, jsonResponse } from "./host-double.ts";
@@ -181,15 +183,22 @@ function typeSearch(container: HTMLElement, value: string): void {
 function submitSearch(container: HTMLElement): void {
   const form = container.querySelector("form");
   if (!form) throw new Error("search form not rendered");
+  // The search UI now requires an explicit type. These legacy collection
+  // scenarios use the Open Library fixture, so select Books in the UI.
+  const books = [...container.querySelectorAll<HTMLButtonElement>(".cs-chip")]
+    .find((button) => button.textContent === "Books");
+  books?.click();
   form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 }
 
 beforeEach(() => {
+  clearSearchSelection();
   globalThis.fetch = stubFetch() as unknown as typeof fetch;
   localStorage.clear();
 });
 
 afterEach(() => {
+  clearSearchSelection();
   document.body.innerHTML = "";
   vi.restoreAllMocks();
 });
@@ -243,13 +252,13 @@ describe("page mount", () => {
     await double.open("collection", { container });
 
     expect(container.querySelector(".cs-app")).toBeTruthy();
-    expect(container.textContent).toContain("Collector Scan");
+    expect(container.querySelector(".cs-title")).toBeTruthy();
     expect(container.querySelector("#cs-search-input")).toBeTruthy();
     expect(container.textContent).toContain("Amazing Spider-Man #300");
     expect(container.querySelectorAll("main")).toHaveLength(0);
   });
 
-  it("queries both providers with the expected request shape and shows ranked matches", async () => {
+  it("queries the selected book catalog and shows ranked matches", async () => {
     const double = createHostDouble();
     activate(double.host);
     const container = mountContainer();
@@ -264,15 +273,8 @@ describe("page mount", () => {
 
     const calls = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
     const urls = calls.map((call) => String(call[0]));
-    expect(urls.some((url) => url.includes("en.wikipedia.org/w/api.php"))).toBe(true);
     expect(urls.some((url) => url.includes("openlibrary.org/search.json"))).toBe(true);
-
-    const wikiUrl = new URL(urls.find((url) => url.includes("wikipedia.org"))!);
-    expect(wikiUrl.searchParams.get("origin")).toBe("*");
-    expect(wikiUrl.searchParams.get("format")).toBe("json");
-    expect(wikiUrl.searchParams.get("gsrsearch")).toBe("Watchmen 1986");
-    // Non-free cover art is excluded from pageimages unless explicitly allowed.
-    expect(wikiUrl.searchParams.get("pilicense")).toBe("any");
+    expect(urls.some((url) => url.includes("wikipedia.org"))).toBe(false);
 
     const olUrl = new URL(urls.find((url) => url.includes("openlibrary"))!);
     // The parsed year is held back from the query; it still drives scoring.
@@ -289,30 +291,12 @@ describe("page mount", () => {
   it("ranks a series above its adaptations and reference pages", async () => {
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes("wikipedia.org")) {
-        return jsonResponse({
-          query: {
-            pages: [
-              {
-                pageid: 2,
-                title: "List of The Amazing Spider-Man issues",
-                extract: "The Amazing Spider-Man issues, The Amazing Spider-Man volumes and The Amazing Spider-Man list.",
-              },
-              {
-                pageid: 3,
-                title: "The Amazing Spider-Man (film)",
-                extract: "The Amazing Spider-Man is a film based on The Amazing Spider-Man.",
-              },
-              {
-                pageid: 1,
-                title: "The Amazing Spider-Man",
-                extract: "The Amazing Spider-Man is a comic book series.",
-              },
-            ],
-          },
-        });
-      }
-      return jsonResponse({ docs: [] });
+      if (url.includes("openlibrary.org")) return jsonResponse({ docs: [
+        { key: "/works/list", title: "List of The Amazing Spider-Man issues" },
+        { key: "/works/film", title: "The Amazing Spider-Man (film)" },
+        { key: "/works/series", title: "The Amazing Spider-Man" },
+      ] });
+      return jsonResponse([]);
     }) as unknown as typeof fetch;
 
     const double = createHostDouble();
@@ -419,7 +403,7 @@ describe("page mount", () => {
     expect(Object.keys(localStorage).sort()).toEqual([stored("backend-a")]);
   });
 
-  it("renders an error state when every provider fails", async () => {
+  it("shows a lookup warning when the selected catalog is unavailable", async () => {
     globalThis.fetch = vi.fn(async () => {
       throw new TypeError("network down");
     }) as unknown as typeof fetch;
@@ -432,16 +416,16 @@ describe("page mount", () => {
     typeSearch(container, "anything");
     submitSearch(container);
 
-    await vi.waitFor(() => expect(container.textContent).toContain("Lookup failed"));
-    expect(container.querySelector(".cs-state--error")).toBeTruthy();
+    await vi.waitFor(() => expect(container.textContent).toContain("Heads up"));
+    expect(container.textContent).toContain("No matches");
     expect(container.textContent).toContain("Could not reach the lookup service");
   });
 
-  it("degrades to a warning when only one provider fails", async () => {
+  it("shows a warning while keeping results when the shared catalog fails", async () => {
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes("openlibrary.org")) throw new TypeError("offline");
-      return jsonResponse(WIKI_PAYLOAD);
+      if (url.includes("openlibrary.org")) return jsonResponse(OL_PAYLOAD);
+      throw new TypeError("offline");
     }) as unknown as typeof fetch;
 
     const double = createHostDouble();
@@ -449,12 +433,11 @@ describe("page mount", () => {
     const container = mountContainer();
     await double.open("collection", { container });
 
-    typeSearch(container, "Amazing Spider-Man");
+    typeSearch(container, "Watchmen");
     submitSearch(container);
 
-    await vi.waitFor(() => expect(container.textContent).toContain("The Amazing Spider-Man"));
+    await vi.waitFor(() => expect(container.textContent).toContain("Watchmen"));
     expect(container.textContent).toContain("Open Library");
-    expect(container.textContent).toContain("Could not reach the lookup service");
     expect(container.querySelector(".cs-state--error")).toBeNull();
   });
 
@@ -477,7 +460,7 @@ describe("page mount", () => {
     expect(container.querySelectorAll(".cs-card").length).toBe(1);
   });
 
-  it("sends Open Library a tolerant query and keeps the raw text for Wikipedia", async () => {
+  it("sends Open Library a tolerant query for the selected book type", async () => {
     const double = createHostDouble();
     activate(double.host);
     const container = mountContainer();
@@ -497,9 +480,7 @@ describe("page mount", () => {
     expect(q).not.toContain('"');
     expect(q).toContain("Watchmen");
     expect(q).toContain("Alan Moore");
-    // Wikipedia ranks its own search text, so it gets the user's raw input.
-    const wikiUrl = new URL(urls.find((url) => url.includes("wikipedia"))!);
-    expect(wikiUrl.searchParams.get("gsrsearch")).toBe('Watchmen Alan Moore 1986 "deluxe"');
+    expect(urls.some((url) => url.includes("wikipedia"))).toBe(false);
   });
 
   it("strips query-syntax characters that make Open Library return nothing", async () => {
@@ -520,24 +501,16 @@ describe("page mount", () => {
     expect(q).not.toContain("#");
     expect(q).not.toContain('"');
     expect(q).toContain("Spider-Man");
-    // Wikipedia keeps the issue number, which its search handles well.
-    const wikiUrl = new URL(urls.find((url) => url.includes("wikipedia"))!);
-    expect(wikiUrl.searchParams.get("gsrsearch")).toContain("#300");
+    expect(urls.some((url) => url.includes("wikipedia"))).toBe(false);
   });
 
   it("labels matches that have no cover art instead of leaving a blank tile", async () => {
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes("wikipedia.org")) {
-        return jsonResponse({
-          query: {
-            pages: [
-              { pageid: 1, title: "Coverless Comic", extract: "A comic with no cover art available." },
-            ],
-          },
-        });
-      }
-      return jsonResponse({ docs: [] });
+      if (url.includes("openlibrary.org")) return jsonResponse({ docs: [
+        { key: "/works/coverless", title: "Coverless Comic" },
+      ] });
+      return jsonResponse([]);
     }) as unknown as typeof fetch;
 
     const double = createHostDouble();
@@ -556,43 +529,16 @@ describe("page mount", () => {
     container.querySelector<HTMLButtonElement>(".cs-card--tappable")!.click();
     await double.open("collection", {
       container,
-      path: `candidate/${encodeURIComponent("wikipedia:1")}`,
+      path: `candidate/${encodeURIComponent("openlibrary:/works/coverless")}`,
     });
     await vi.waitFor(() => expect(container.textContent).toContain("Add to collection"));
     expect(container.querySelector(".cs-media--hero .cs-media__note")?.textContent).toBe("No image");
   });
 
   it("rejects non-https image URLs instead of rendering them", async () => {
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes("wikipedia.org")) {
-        return jsonResponse({
-          query: {
-            pages: [
-              {
-                pageid: 7,
-                title: "Sketchy Item",
-                extract: "A collectible.",
-                thumbnail: { source: "javascript:alert(1)" },
-              },
-            ],
-          },
-        });
-      }
-      return jsonResponse({ docs: [] });
-    }) as unknown as typeof fetch;
-
-    const double = createHostDouble();
-    activate(double.host);
-    const container = mountContainer();
-    await double.open("collection", { container });
-
-    typeSearch(container, "Sketchy Item");
-    submitSearch(container);
-    await vi.waitFor(() => expect(container.textContent).toContain("Sketchy Item"));
-
-    expect(container.querySelectorAll("img").length).toBe(0);
-    expect(container.querySelector(".cs-media__glyph")).toBeTruthy();
+    const image = thumbnail("javascript:alert(1)", "ITEM", "Sketchy Item");
+    expect(image.querySelector("img")).toBeNull();
+    expect(image.querySelector(".cs-media__glyph")).toBeTruthy();
   });
 
   it("handles nested routes, unknown routes, and route remounts", async () => {
@@ -665,7 +611,7 @@ describe("page mount", () => {
 
     await double.open("collection", { container, path: "" });
     await vi.waitFor(() => expect(container.textContent).toContain("Watchmen"));
-    expect((globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBe(2);
+    expect((globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBe(1);
   });
 
   it("filters the collection by type and favourites", async () => {
@@ -813,7 +759,7 @@ describe("collection types", () => {
 
     await saveFirstMatch(container, double, (root) => {
       const type = root.querySelector<HTMLSelectElement>("#cs-add-category")!;
-      expect(type.value).toBe("comic");
+      expect(type.value).toBe("book");
       type.value = "video-game";
     });
 

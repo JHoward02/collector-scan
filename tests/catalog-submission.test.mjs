@@ -56,3 +56,8 @@ test("invalid and unapproved submissions cannot enter the catalog", () => {
   assert.throws(() => parseSubmission({ ...issue, body: "arbitrary issue text" }), /Not a Shelfie/);
   assert.deepEqual(applyCatalogEvent([], { action: "created", comment: { body: "/approve-catalog", user: { login: "stranger" } }, issue }), []);
 });
+
+test("sneaker proposals can enter the reviewed catalog", () => {
+  const sneaker = { ...issue, body: issue.body.replace("### Category\n\nfigure", "### Category\n\nsneaker") };
+  assert.equal(parseSubmission(sneaker).category, "sneaker");
+});

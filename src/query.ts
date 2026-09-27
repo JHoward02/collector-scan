@@ -12,6 +12,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<Category, "other">, string[]> = {
     "autograph", "auto", "patch", "jersey", "baseball card", "basketball card", "football card",
     "trading card", "insert", "parallel", "graded",
   ],
+  tcg: ["tcg", "pokemon card", "pokémon card", "magic the gathering", "yu-gi-oh", "lorcana", "one piece card"],
   book: [
     "book", "novel", "hardcover", "paperback", "first edition", "1st edition", "isbn",
     "author", "published", "publisher", "omnibus", "tpb", "trade paperback",
