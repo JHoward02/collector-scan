@@ -255,7 +255,7 @@ export class CollectorApp {
             type: "search",
             name: "q",
             value: this.session.query,
-            placeholder: "e.g. Amazing Spider-Man #300",
+            placeholder: "e.g. Dungeon Crawler Carl book 1",
             autocomplete: "off",
             autocapitalize: "off",
             spellcheck: "false",
