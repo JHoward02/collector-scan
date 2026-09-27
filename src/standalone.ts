@@ -1,4 +1,5 @@
 import extension from "./extension.ts";
+import { renderFooter } from "./footer.ts";
 import type { CanvasExtensionHost, CanvasExtensionPageMount } from "./host.ts";
 
 const root = document.querySelector<HTMLElement>("#app");
@@ -13,7 +14,6 @@ function dismissSplash(): void {
   const animation = splash.querySelector<HTMLImageElement>(".shelfie-splash__animation");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fadeDuration = reduced ? 0 : 360;
-  // The GIF lasts 6,080 ms. Finish fading before its second loop begins.
   const dismissAfter = reduced ? 500 : 6080 - fadeDuration;
   const startTimer = () => {
     window.setTimeout(() => {
@@ -34,6 +34,11 @@ function routePath(): string {
   return hash || "";
 }
 
+function mountFooter(): void {
+  document.querySelector(".cs-footer")?.remove();
+  root.insertAdjacentElement("afterend", renderFooter());
+}
+
 async function render(): Promise<void> {
   if (!mountPage) return;
   if (typeof cleanup === "function") cleanup();
@@ -48,6 +53,7 @@ async function render(): Promise<void> {
       location.hash = relative ? `#/${relative}` : "#/";
     },
   });
+  mountFooter();
 }
 
 const host: CanvasExtensionHost = {
