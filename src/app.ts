@@ -3,6 +3,7 @@ import type { CanvasExtensionHost } from "./host.ts";
 import { confidenceLabel, type ScoredCandidate } from "./match.ts";
 import { searchAll } from "./providers/index.ts";
 import { parseQuery } from "./query.ts";
+import { manualOnlySelection } from "./search-selection.ts";
 import type { AppSession, SortKey, Tab } from "./session.ts";
 import { CollectionStore, itemFromCandidate, makeId } from "./store.ts";
 import { formatDate, normalizeText, tokenize } from "./text.ts";
@@ -398,7 +399,9 @@ export class CollectorApp {
       host.append(
         this.stateBlock(
           "No matches",
-          this.session.results.length
+          this.session.manualOnly
+            ? "This type has no dedicated catalog yet. Add your item manually."
+            : this.session.results.length
             ? "No results in this type. Try choosing “Any type”."
             : "Nothing came back for that search. Try fewer words, or add the year or issue number.",
         ),
@@ -1577,10 +1580,15 @@ export class CollectorApp {
   private async runSearch(): Promise<void> {
     const raw = this.session.query.trim();
     if (!raw) {
+      if (manualOnlySelection()) {
+        document.dispatchEvent(new Event("shelfie:manual-entry"));
+        return;
+      }
       this.session.status = "idle";
       this.session.results = [];
       this.session.warnings = [];
       this.session.error = null;
+      this.session.manualOnly = false;
       this.render();
       return;
     }
@@ -1603,10 +1611,12 @@ export class CollectorApp {
     this.session.results = outcome.results;
     this.session.warnings = outcome.warnings;
     this.session.error = outcome.error;
+    this.session.manualOnly = outcome.manualOnly ?? false;
     this.session.resultsFor = raw;
     this.session.resultTokens = tokenize(query.title).length;
     this.session.status = outcome.error ? "error" : "ready";
     this.render();
+    if (outcome.manualOnly) document.dispatchEvent(new Event("shelfie:manual-entry"));
   }
 
   private toggleFavorite(id: string): void {
