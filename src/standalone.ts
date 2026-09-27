@@ -1,7 +1,6 @@
 import extension from "./extension.ts";
 import { renderFooter } from "./footer.ts";
 import { installPhotoFallback } from "./photo-fallback.ts";
-import "./manual-entry.ts";
 import type { CanvasExtensionHost, CanvasExtensionPageMount } from "./host.ts";
 
 const root = document.querySelector<HTMLElement>("#app");
