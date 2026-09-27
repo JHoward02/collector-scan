@@ -1,11 +1,11 @@
 # Third-Party Notices
 
-## RAWG
-Shelfie's video-game catalog lookup may use data and images supplied by RAWG:
-https://rawg.io
-https://rawg.io/apidocs
+## Wikipedia
+Shelfie's keyless video-game lookup may use article data and images returned by Wikipedia's public API:
+https://www.wikipedia.org
+https://www.mediawiki.org/wiki/API:Main_page
 
-Shelfie identifies RAWG as the data source and provides active links back to RAWG from RAWG-sourced records and the in-app Attribution page. RAWG-supplied game names, artwork, trademarks, screenshots, and other third-party intellectual property remain with their respective rights holders. Use of RAWG data does not imply endorsement of Shelfie by RAWG or game rights holders. Shelfie's RAWG integration is intended to operate within RAWG's applicable API usage terms and limits.
+Wikipedia article text is generally available under the Creative Commons Attribution-ShareAlike 4.0 International license (CC BY-SA 4.0), subject to the notices and exceptions on the relevant page. Shelfie identifies Wikipedia as the source and links records back to the originating article. Images and other media can carry separate licenses or non-free/fair-use terms; game artwork, names, trademarks, and other third-party intellectual property remain with their respective rights holders. Shelfie's use does not imply endorsement by the Wikimedia Foundation or game rights holders.
 
 ## Open Library
 Shelfie's book catalog lookup may use metadata and cover links supplied by Open Library, an Internet Archive project:
