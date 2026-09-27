@@ -24,3 +24,16 @@ Yu-Gi-Oh! card search data and imagery may be supplied by the YGOPRODeck public 
 https://ygoprodeck.com
 
 Shelfie should follow YGOPRODeck's published API and image-use requirements. Yu-Gi-Oh! names, images, and other intellectual property remain the property of their respective rights holders.
+
+## LorcanaJSON
+Disney Lorcana catalog data may be supplied by LorcanaJSON.
+https://lorcanajson.org
+https://github.com/LorcanaJSON/LorcanaJSON
+
+LorcanaJSON is a community data project and is not affiliated with Disney or Ravensburger. Disney Lorcana names, card artwork, trademarks, and other intellectual property remain the property of their respective rights holders. Shelfie identifies LorcanaJSON as the data source wherever its records are used.
+
+## Flesh and Blood Cards
+Flesh and Blood catalog data may be supplied by the community-maintained flesh-and-blood-cards dataset.
+https://github.com/the-fab-cube/flesh-and-blood-cards
+
+The dataset repository publishes its own license and attribution terms. Flesh and Blood names, artwork, trademarks, and other intellectual property remain the property of Legend Story Studios and/or their respective rights holders. Shelfie identifies the community dataset as the data source and does not imply affiliation or endorsement.
