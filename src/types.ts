@@ -6,7 +6,7 @@ export const CATEGORIES = [
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 export type CategoryFilter = Category | "all";
-export type ProviderId = "openlibrary" | "wikipedia" | "cardlists" | "scryfall" | "ygoprodeck" | "lorcanajson" | "fab" | "pokemon-data" | "onepiece-data" | "gcd" | "rawg" | "funko-data" | "amiiboapi" | "hotwheels-fandom" | "matchbox-fandom" | "minigt-fandom" | "m2-fandom" | "tomica-fandom" | "tarmac-fandom" | "greenlight-live";
+export type ProviderId = "openlibrary" | "wikipedia" | "cardlists" | "scryfall" | "ygoprodeck" | "lorcanajson" | "fab" | "pokemon-data" | "onepiece-data" | "gcd" | "rawg" | "funko-data" | "amiiboapi" | "hotwheels-fandom" | "matchbox-fandom" | "minigt-fandom" | "m2-fandom" | "tomica-fandom" | "tarmac-fandom" | "greenlight-live" | "discogs";
 
 export interface DetailRow { label: string; value: string; }
 export interface Candidate {
