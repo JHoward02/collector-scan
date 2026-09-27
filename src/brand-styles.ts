@@ -1,4 +1,4 @@
-export const BRAND_STYLE_MARKER = "shelfie-brand-v021";
+export const BRAND_STYLE_MARKER = "shelfie-brand-v022";
 
 export const brandStyles = `
 .cs-app {
@@ -23,12 +23,33 @@ export const brandStyles = `
 }
 .cs-app { background: linear-gradient(180deg,#fff 0,#f7f5ef 34%,#f7f5ef 100%) !important; }
 .cs-header { padding: 0 !important; gap: 4px !important; }
-.cs-header__row { min-height: 82px; }
-.cs-title { font-size: 0 !important; display:flex; align-items:center; gap:12px; }
-.cs-title[data-shelfie-home="true"] { cursor:pointer; width:max-content; border-radius:8px; }
+.cs-header__row { min-height: 112px !important; }
+.cs-title,
+.cs-title[data-shelfie-home="true"] {
+  display:block !important;
+  flex:1 1 470px !important;
+  font-size:0 !important;
+  height:108px !important;
+  margin:0 !important;
+  max-width:470px !important;
+  min-width:0 !important;
+  overflow:visible !important;
+  padding:0 !important;
+  width:100% !important;
+}
+.cs-title[data-shelfie-home="true"] { cursor:pointer; border-radius:8px; }
 .cs-title[data-shelfie-home="true"]:focus-visible { outline:3px solid #087dcc; outline-offset:5px; }
-.cs-title::before { content:"SHELFIE"; font-size:30px; line-height:1; font-weight:950; font-style:italic; letter-spacing:-.05em; color:#ffcf18; -webkit-text-stroke: 2px #07111f; text-shadow:3px 3px 0 #ef2b2d; }
-.cs-title::after { display:none !important; }
+.cs-title::before,.cs-title::after { content:none !important; display:none !important; }
+.cs-title__logo {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
+  object-position:left center !important;
+  pointer-events:none !important;
+  user-select:none !important;
+  -webkit-user-drag:none !important;
+}
 .cs-subtitle { display:none !important; }
 .cs-count { background:#07111f !important; border:0 !important; color:#fff !important; font-weight:700; padding:8px 12px !important; }
 .cs-tabs { align-self:flex-end; width:auto; display:flex !important; background:transparent !important; border:0 !important; border-radius:10px !important; padding:0 !important; margin-top:-62px; z-index:2; margin-right:150px; }
@@ -54,9 +75,11 @@ export const brandStyles = `
 .cs-suggestions, .cs-state { background:#fff !important; }
 @media (max-width: 640px) {
   .cs-app { padding:14px 14px 92px !important; gap:14px !important; }
-  .cs-header__row { min-height:66px; }
-  .cs-title::before { font-size:25px; -webkit-text-stroke:1.5px #07111f; text-shadow:2px 2px 0 #ef2b2d; }
-  .cs-count { font-size:11px !important; padding:6px 9px !important; }
+  .cs-header__row { align-items:stretch !important; flex-direction:column !important; gap:4px !important; min-height:0 !important; }
+  .cs-title,
+  .cs-title[data-shelfie-home="true"] { flex:none !important; height:92px !important; max-width:100% !important; width:100% !important; }
+  .cs-title__logo { object-position:center center !important; }
+  .cs-count { align-self:flex-end !important; font-size:11px !important; padding:6px 9px !important; }
   .cs-tabs { margin:0 !important; align-self:stretch; justify-content:space-between; border-bottom:1px solid #e4e7ec !important; }
   .cs-tab { flex:1; }
   .cs-search { padding-top:12px; }
