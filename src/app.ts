@@ -9,6 +9,8 @@ import { formatDate, normalizeText, tokenize } from "./text.ts";
 import {
   CATEGORY_GLYPHS,
   CATEGORY_LABELS,
+  CATEGORY_FILTER_LABELS,
+  CATEGORIES,
   CONDITIONS,
   type Candidate,
   type Category,
@@ -336,10 +338,7 @@ export class CollectorApp {
   private renderCategoryChips(): HTMLElement {
     const options: { value: CategoryFilter; label: string }[] = [
       { value: "all", label: "Any type" },
-      { value: "comic", label: "Comics" },
-      { value: "sports-card", label: "Sports cards" },
-      { value: "book", label: "Books" },
-      { value: "other", label: "Other" },
+      ...CATEGORIES.map((value) => ({ value, label: CATEGORY_FILTER_LABELS[value] })),
     ];
     return el("div", { class: "cs-chips", attrs: { role: "group", "aria-label": "Filter by type" } }, [
       ...options.map((option) =>
@@ -529,6 +528,8 @@ export class CollectorApp {
     const section = el("section", { class: "cs-section" });
     section.append(el("h3", { class: "cs-section__title", text: "Add to collection" }));
 
+    const category = this.categorySelect("cs-add-category", candidate.category);
+
     const condition = el("select", { class: "cs-select", attrs: { id: "cs-add-condition" } }, [
       ...CONDITIONS.map((value) =>
         el("option", { text: value === "graded" ? "Graded / slabbed" : value, attrs: { value, selected: value === "good" } }),
@@ -560,6 +561,7 @@ export class CollectorApp {
     const group = this.groupField("cs-add", activeGroup);
 
     section.append(
+      this.field("Type", category),
       el("div", { class: "cs-grid2" }, [
         this.field("Condition", condition),
         this.field("Grade / slab", grade),
@@ -580,6 +582,7 @@ export class CollectorApp {
         on: {
           click: () => {
             const item = itemFromCandidate(candidate);
+            item.category = category.value as Category;
             item.condition = condition.value as Condition;
             item.grade = grade.value.trim();
             item.pricePaid = parseMoney(price.value);
@@ -664,6 +667,8 @@ export class CollectorApp {
     const section = el("section", { class: "cs-section" });
     section.append(el("h3", { class: "cs-section__title", text: "My copy" }));
 
+    const category = this.categorySelect("cs-edit-category", item.category);
+
     const condition = el("select", { class: "cs-select", attrs: { id: "cs-edit-condition" } }, [
       ...CONDITIONS.map((value) =>
         el("option", {
@@ -709,6 +714,7 @@ export class CollectorApp {
     const group = this.groupField("cs-edit", item.groupId);
 
     section.append(
+      this.field("Type", category),
       el("div", { class: "cs-grid2" }, [this.field("Condition", condition), this.field("Grade / slab", grade)]),
       el("div", { class: "cs-grid2" }, [this.field("Price paid", price), this.field("Estimated value", value)]),
       el("div", { class: "cs-grid2" }, [
@@ -729,6 +735,7 @@ export class CollectorApp {
             click: () => {
               const updated: CollectionItem = {
                 ...item,
+                category: category.value as Category,
                 condition: condition.value as Condition,
                 grade: grade.value.trim(),
                 pricePaid: parseMoney(price.value),
@@ -792,6 +799,15 @@ export class CollectorApp {
       el("span", { class: "cs-field__label", text: label }),
       control,
     ]);
+  }
+
+  private categorySelect(id: string, selected: Category): HTMLSelectElement {
+    return el("select", { class: "cs-select", attrs: { id } },
+      CATEGORIES.map((category) => el("option", {
+        text: CATEGORY_LABELS[category],
+        attrs: { value: category, selected: category === selected },
+      })),
+    );
   }
 
   private backButton(label: string): HTMLElement {
@@ -1118,7 +1134,7 @@ export class CollectorApp {
 
     const categorySelect = el("select", { class: "cs-select", attrs: { id: "cs-collection-category" } }, [
       el("option", { text: "Any type", attrs: { value: "all", selected: this.session.collectionFilter === "all" } }),
-      ...(["comic", "sports-card", "book", "other"] as Category[]).map((category) =>
+      ...CATEGORIES.map((category) =>
         el("option", {
           text: CATEGORY_LABELS[category],
           attrs: { value: category, selected: this.session.collectionFilter === category },
