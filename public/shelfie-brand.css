@@ -18,20 +18,22 @@
   max-width: 470px !important;
   min-width: 280px !important;
   overflow: hidden !important;
-  text-indent: 0 !important;
+  position: relative !important;
+  text-indent: -9999px !important;
   width: 100% !important;
 }
 
-.cs-app .cs-title::before {
-  content: url("/collector-scan/LogoV3.png?v=logo-2") !important;
+.cs-app .cs-title::before,
+.cs-app .cs-title[data-shelfie-home="true"]::before {
+  background: url("/collector-scan/LogoV3.png?v=logo-3") center center / contain no-repeat !important;
+  content: "" !important;
   display: block !important;
-  width: 100% !important;
-  height: 108px !important;
-  overflow: hidden !important;
-  transform-origin: left center;
+  inset: 0 !important;
+  position: absolute !important;
 }
 
-.cs-app .cs-title::after {
+.cs-app .cs-title::after,
+.cs-app .cs-title[data-shelfie-home="true"]::after {
   content: none !important;
   display: none !important;
 }
@@ -53,12 +55,6 @@
     max-width: 100% !important;
     min-width: 0 !important;
     width: 100% !important;
-  }
-
-  .cs-app .cs-title::before {
-    height: 92px !important;
-    transform: scale(0.82);
-    transform-origin: center center;
   }
 
   .cs-app .cs-count {
