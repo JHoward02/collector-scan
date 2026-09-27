@@ -1,5 +1,18 @@
 # Third-Party Notices
 
+## Hot Wheels Wiki / Fandom
+Shelfie's Hot Wheels catalog uses structured metadata derived from the Hot Wheels Wiki at Fandom:
+https://hotwheels.fandom.com/
+https://www.fandom.com/licensing
+
+The Hot Wheels Wiki states that its community text is available under the Creative Commons Attribution-ShareAlike 3.0 license unless otherwise noted:
+https://creativecommons.org/licenses/by-sa/3.0/
+
+Shelfie also acknowledges the community data-structuring project used to make this catalog practical for lookup:
+https://github.com/arthurfelipercosta/hotwheelsapi
+
+Catalog metadata derived from the Hot Wheels Wiki remains subject to CC BY-SA 3.0 and is attributed back to the wiki/Fandom. Shelfie's application code and independently created content are not licensed under CC BY-SA merely because they interact with this catalog. Images are handled separately: Shelfie checks the originating Fandom file's machine-readable license metadata and only displays an image when a reusable commercial license or public-domain status can be verified. Unknown, fair-use, non-free, and noncommercial-only images are omitted. Hot Wheels and related trademarks and product intellectual property remain with Mattel and/or their respective rights holders. No affiliation or endorsement is implied.
+
 ## AmiiboAPI
 Shelfie's Amiibo lookup uses AmiiboAPI:
 https://www.amiiboapi.com/
