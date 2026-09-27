@@ -16,6 +16,12 @@ const CATEGORY_KEYWORDS: Record<Exclude<Category, "other">, string[]> = {
     "book", "novel", "hardcover", "paperback", "first edition", "1st edition", "isbn",
     "author", "published", "publisher", "omnibus", "tpb", "trade paperback",
   ],
+  "video-game": ["video game", "videogame", "nintendo", "playstation", "xbox", "sega", "game cartridge", "game disc"],
+  figure: ["action figure", "figurine", "funko pop", "statue", "nendoroid", "amiibo"],
+  toy: ["toy", "toys", "lego", "hot wheels", "barbie", "plush"],
+  coin: ["coin", "coins", "numismatic", "silver dollar", "mint mark"],
+  vinyl: ["vinyl", "lp record", "record album", "12-inch single"],
+  sneaker: ["sneaker", "sneakers", "air jordan", "air max", "yeezy", "dunk low"],
 };
 
 const PUBLISHERS = [

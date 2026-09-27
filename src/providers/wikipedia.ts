@@ -10,7 +10,9 @@ import {
 } from "./types.ts";
 
 const ENDPOINT = "https://en.wikipedia.org/w/api.php";
-const CATEGORIES: Category[] = ["comic", "sports-card", "other"];
+const CATEGORIES: Category[] = [
+  "comic", "sports-card", "video-game", "figure", "toy", "coin", "vinyl", "sneaker", "other",
+];
 
 const CARD_HINTS = /baseball card|trading card|sports card|topps|panini|rookie card|card set|cardboard/i;
 const COMIC_HINTS = /comic book|comics|graphic novel|superhero|issue of|marvel|dc comics/i;
@@ -19,7 +21,13 @@ const YEAR_IN_TEXT = /\b(1[89]\d{2}|20\d{2})\b/;
 function inferCategory(title: string, extract: string | null): Category {
   const haystack = `${title} ${extract ?? ""}`;
   if (CARD_HINTS.test(haystack)) return "sports-card";
+  if (/video game|computer game|game cartridge|nintendo|playstation|xbox/i.test(haystack)) return "video-game";
   if (COMIC_HINTS.test(haystack)) return "comic";
+  if (/action figure|figurine|funko pop|collectible statue|nendoroid|amiibo/i.test(haystack)) return "figure";
+  if (/sneaker|athletic shoe|basketball shoe|air jordan|yeezy/i.test(haystack)) return "sneaker";
+  if (/vinyl record|record album|\blp record\b|phonograph record/i.test(haystack)) return "vinyl";
+  if (/\bcoin\b|\bcoins\b|numismatic|currency mint/i.test(haystack)) return "coin";
+  if (/\btoy\b|\btoys\b|lego|hot wheels|barbie|plush/i.test(haystack)) return "toy";
   return "other";
 }
 

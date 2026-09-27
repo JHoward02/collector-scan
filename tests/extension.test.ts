@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { activate } from "../src/extension.ts";
 import { confidenceLabel } from "../src/match.ts";
+import { parseQuery } from "../src/query.ts";
+import { wikipediaProvider } from "../src/providers/wikipedia.ts";
 import { styles } from "../src/styles.ts";
 import { createHostDouble, jsonResponse } from "./host-double.ts";
 
@@ -776,6 +778,62 @@ function firstGroupId(): string {
   const raw = JSON.parse(localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!);
   return raw.groups[0].id;
 }
+
+describe("collection types", () => {
+  it("recognizes the new types in queries and Wikipedia results", async () => {
+    const examples = [
+      ["Nintendo video game", "video-game"],
+      ["Funko Pop action figure", "figure"],
+      ["LEGO toy", "toy"],
+      ["silver dollar coin", "coin"],
+      ["vinyl record album", "vinyl"],
+      ["Air Jordan sneaker", "sneaker"],
+    ] as const;
+    for (const [title, category] of examples) {
+      expect(parseQuery(title).category).toBe(category);
+      vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ query: {
+        pages: [{ pageid: 123, title, extract: `${title} is a collectible.` }],
+      } })));
+      const result = await wikipediaProvider.search(parseQuery(title), new AbortController().signal);
+      expect(result.candidates[0].category).toBe(category);
+    }
+  });
+
+  it("offers the new types in search and lets collectors save, filter, and reclassify an item", async () => {
+    const double = createHostDouble();
+    activate(double.host);
+    const container = mountContainer();
+    await double.open("collection", { container });
+
+    for (const label of ["Video games", "Figures", "Toys", "Coins", "Vinyl", "Sneakers"]) {
+      expect([...activeRoot(container).querySelectorAll(".cs-chip")].some((chip) => chip.textContent === label)).toBe(true);
+    }
+
+    container.replaceChildren();
+
+    await saveFirstMatch(container, double, (root) => {
+      const type = root.querySelector<HTMLSelectElement>("#cs-add-category")!;
+      expect(type.value).toBe("comic");
+      type.value = "video-game";
+    });
+
+    const saved = JSON.parse(localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!);
+    expect(saved.items[0].category).toBe("video-game");
+    const filter = activeRoot(container).querySelector<HTMLSelectElement>("#cs-collection-category")!;
+    filter.value = "video-game";
+    filter.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(activeRoot(container).textContent).toContain("Watchmen");
+
+    await double.open("collection", { container, path: `item/${saved.items[0].id}` });
+    const edit = activeRoot(container).querySelector<HTMLSelectElement>("#cs-edit-category")!;
+    edit.value = "vinyl";
+    const save = [...activeRoot(container).querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => button.textContent === "Save changes")!;
+    save.click();
+    const updated = JSON.parse(localStorage.getItem("openhands:apps:collector-scan:local-test:collection:v1")!);
+    expect(updated.items[0].category).toBe("vinyl");
+  });
+});
 
 describe("collection groups", () => {
   it("creates a group while saving an item and files the item into it", async () => {

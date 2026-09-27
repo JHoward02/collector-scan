@@ -76,7 +76,11 @@ export function scoreCandidate(
     reasons.push("title match");
   }
 
-  if (NON_ITEM_PATTERNS.some((pattern) => pattern.test(candidate.title))) {
+  // "(video game)" can identify the collectible itself, rather than an adaptation.
+  const referenceTitle = candidate.category === "video-game"
+    ? candidate.title.replace(/\(\s*video game\s*\)/i, "")
+    : candidate.title;
+  if (NON_ITEM_PATTERNS.some((pattern) => pattern.test(referenceTitle))) {
     score -= 0.25;
     reasons.push("reference page");
   }
