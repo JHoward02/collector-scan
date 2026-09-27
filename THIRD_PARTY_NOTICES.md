@@ -1,5 +1,12 @@
 # Third-Party Notices
 
+## Matchbox Cars Wiki / Fandom
+Shelfie's Matchbox lookup uses community catalog material from the Matchbox Cars Wiki at Fandom:
+https://matchbox.fandom.com/
+https://www.fandom.com/licensing
+
+The Matchbox Cars Wiki identifies its community content as available under Creative Commons Attribution-ShareAlike unless otherwise noted. Shelfie links results to the originating wiki pages and identifies Fandom/Matchbox Cars Wiki as the source. Images are handled separately and displayed only when Shelfie's file-level license checker verifies a reusable commercial license or public-domain status. Unknown, fair-use, non-free, and noncommercial-only images are omitted. Matchbox and related trademarks and product intellectual property remain with Mattel and/or their respective rights holders. No affiliation or endorsement is implied.
+
 ## Hot Wheels Wiki / Fandom
 Shelfie's Hot Wheels catalog uses structured metadata derived from the Hot Wheels Wiki at Fandom:
 https://hotwheels.fandom.com/
