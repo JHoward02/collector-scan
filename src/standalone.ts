@@ -14,8 +14,8 @@ function dismissSplash(): void {
   window.setTimeout(() => {
     splash.classList.add("is-leaving");
     document.documentElement.classList.remove("shelfie-splash-active");
-    window.setTimeout(() => splash.remove(), reduced ? 0 : 450);
-  }, reduced ? 500 : 2550);
+    window.setTimeout(() => splash.remove(), reduced ? 0 : 360);
+  }, reduced ? 500 : 2700);
 }
 
 function routePath(): string {
@@ -41,7 +41,7 @@ async function render(): Promise<void> {
 
 const host: CanvasExtensionHost = {
   apiVersion: "1",
-  extension: { name: "collector-scan", version: "0.3.0", resolvedRef: null },
+  extension: { name: "collector-scan", version: "0.3.1", resolvedRef: null },
   backend: { id: "standalone", kind: "local", orgId: null },
   registerPage(_contributionId, mount) {
     mountPage = mount;
