@@ -20,7 +20,24 @@ function injectStyle(marker: string, css: string): () => void {
 
 function enhanceLogoHome(container: HTMLElement, goHome: () => void): void {
   const logo = container.querySelector<HTMLElement>(".cs-title");
-  if (!logo || logo.dataset.shelfieHome === "true") return;
+  if (!logo) return;
+
+  // Render the brand art as a real image inside the existing title element.
+  // The click target is the title wrapper; the image itself never intercepts
+  // pointer events, so navigation styling cannot cover or clip the artwork.
+  let image = logo.querySelector<HTMLImageElement>(".cs-title__logo");
+  if (!image) {
+    logo.replaceChildren();
+    image = document.createElement("img");
+    image.className = "cs-title__logo";
+    image.src = "/collector-scan/LogoV3.png?v=logo-real-1";
+    image.alt = "Shelfie";
+    image.decoding = "async";
+    image.draggable = false;
+    logo.append(image);
+  }
+
+  if (logo.dataset.shelfieHome === "true") return;
   logo.dataset.shelfieHome = "true";
   logo.setAttribute("role", "link");
   logo.setAttribute("tabindex", "0");
