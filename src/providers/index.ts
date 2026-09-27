@@ -16,14 +16,27 @@ export interface SearchOutcome {
 
 /**
  * Query only providers that support the type the user explicitly selected.
- * This keeps unrelated APIs from being called for every search.
+ * No type means no network calls.
  */
 export async function searchAll(
   query: SearchQuery,
-  category: Category,
-  signal: AbortSignal,
+  categoryOrSignal: Category | AbortSignal,
+  maybeSignal?: AbortSignal,
   providers: Provider[] = PROVIDERS,
 ): Promise<SearchOutcome> {
+  // Backward-compatible guard while the search UI is migrated: the old
+  // two-argument call is deliberately blocked rather than broadcasting to all
+  // providers. This guarantees that an untyped search cannot spend API quota.
+  if (categoryOrSignal instanceof AbortSignal) {
+    return {
+      results: [],
+      warnings: [],
+      error: "Choose a type first. Select what you're adding to your Shelfie so we know where to search.",
+    };
+  }
+
+  const category = categoryOrSignal;
+  const signal = maybeSignal as AbortSignal;
   const selectedProviders = providers.filter((provider) => provider.categories.includes(category));
   if (!selectedProviders.length) {
     return { results: [], warnings: [], error: `No lookup provider is configured for ${category}.` };
