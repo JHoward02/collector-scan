@@ -1,6 +1,6 @@
 import type { Candidate, SearchQuery } from "../types.ts";
 import { asArray, asRecord, asString, fetchJson, type Provider } from "./types.ts";
-import { checkFandomImageLicense } from "../fandom-image-license.ts";
+import { checkFandomImageLicense } from "./fandom-image-license.ts";
 
 type Config={id:Candidate["provider"];label:string;host:string;brand:string;license:string};
 
