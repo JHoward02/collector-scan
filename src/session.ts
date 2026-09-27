@@ -5,14 +5,14 @@ export type Tab = "search" | "collection";
 export type SortKey = "recent" | "title" | "value" | "category";
 export type GroupFilter = string;
 export type TcgGame = "magic" | "yugioh" | "pokemon" | "lorcana" | "one-piece" | "fab" | "other";
+export type FigureLine = "amiibo" | "mcfarlane" | "funko-pop" | "nendoroid" | "other";
 
 export interface AppSession {
   activeTab: Tab;
   query: string;
-  /** Search type is deliberately nullable: users must choose it before lookup. */
   searchCategory: Category | null;
-  /** Required when searchCategory is TCG. */
   tcgGame: TcgGame | null;
+  figureLine: FigureLine | null;
   categoryFilter: CategoryFilter;
   status: SearchStatus;
   results: ScoredCandidate[];
@@ -30,16 +30,6 @@ export interface AppSession {
 }
 
 export function createSession(): AppSession {
-  return {
-    activeTab:"search", query:"", searchCategory:null, tcgGame:null, categoryFilter:"all", status:"idle", results:[], warnings:[], error:null,
-    resultsFor:"", resultTokens:0, collectionQuery:"", collectionFilter:"all", collectionSort:"recent", collectionGroupFilter:"all",
-    groupFormOpen:false, favoritesOnly:false, flash:null,
-  };
+  return {activeTab:"search",query:"",searchCategory:null,tcgGame:null,figureLine:null,categoryFilter:"all",status:"idle",results:[],warnings:[],error:null,resultsFor:"",resultTokens:0,collectionQuery:"",collectionFilter:"all",collectionSort:"recent",collectionGroupFilter:"all",groupFormOpen:false,favoritesOnly:false,flash:null};
 }
-
-export function clearSession(session: AppSession): void {
-  session.activeTab="search"; session.query=""; session.searchCategory=null; session.tcgGame=null; session.categoryFilter="all"; session.status="idle";
-  session.results=[]; session.warnings=[]; session.error=null; session.resultsFor=""; session.resultTokens=0; session.collectionQuery="";
-  session.collectionFilter="all"; session.collectionSort="recent"; session.collectionGroupFilter="all"; session.groupFormOpen=false;
-  session.favoritesOnly=false; session.flash=null;
-}
+export function clearSession(session:AppSession):void{session.activeTab="search";session.query="";session.searchCategory=null;session.tcgGame=null;session.figureLine=null;session.categoryFilter="all";session.status="idle";session.results=[];session.warnings=[];session.error=null;session.resultsFor="";session.resultTokens=0;session.collectionQuery="";session.collectionFilter="all";session.collectionSort="recent";session.collectionGroupFilter="all";session.groupFormOpen=false;session.favoritesOnly=false;session.flash=null;}
