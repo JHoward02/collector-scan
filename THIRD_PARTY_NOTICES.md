@@ -1,5 +1,12 @@
 # Third-Party Notices
 
+## Open Library
+Shelfie's book catalog lookup may use metadata and cover links supplied by Open Library, an Internet Archive project:
+https://openlibrary.org
+https://openlibrary.org/developers/api
+
+Shelfie links identified editions back to Open Library and identifies Open Library as the data source. Open Library records may incorporate bibliographic information from multiple contributing sources. Book cover artwork and other third-party content remain subject to the rights of their respective copyright holders. Use of Open Library data or cover services does not imply affiliation with or endorsement by Open Library or Internet Archive.
+
 ## Grand Comics Database (GCD)
 Shelfie's comic catalog lookup may use metadata from the Grand Comics Database:
 https://www.comics.org
