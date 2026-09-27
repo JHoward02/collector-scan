@@ -37,3 +37,15 @@ Flesh and Blood catalog data may be supplied by the community-maintained flesh-a
 https://github.com/the-fab-cube/flesh-and-blood-cards
 
 The dataset repository publishes its own license and attribution terms. Flesh and Blood names, artwork, trademarks, and other intellectual property remain the property of Legend Story Studios and/or their respective rights holders. Shelfie identifies the community dataset as the data source and does not imply affiliation or endorsement.
+
+## Pokémon TCG Data
+Pokémon catalog records may be supplied from the legacy Pokémon TCG Data repository:
+https://github.com/PokemonTCG/pokemon-tcg-data
+
+This source is treated as a historical/compatibility catalog and may not contain the newest releases. Shelfie does not use it as an indication of affiliation with or endorsement by The Pokémon Company, Nintendo, Creatures, or Game Freak. Pokémon names, artwork, trademarks, and other intellectual property remain with their respective rights holders.
+
+## Punk Records / One Piece TCG community data
+One Piece Card Game catalog metadata may be supplied by the Punk Records OPTCG community dataset:
+https://github.com/Kuroro1990/OPTCG
+
+The repository distinguishes its software/pipeline licensing from the underlying card content. Shelfie uses community catalog metadata as a lookup aid and does not claim ownership of One Piece Card Game names, artwork, trademarks, or other underlying intellectual property, which remain with Bandai and/or their respective rights holders. This integration does not imply affiliation or endorsement.
