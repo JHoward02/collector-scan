@@ -1,0 +1,56 @@
+name: Review Shelfie catalog submissions
+
+on:
+  issues:
+    types: [closed]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  catalog:
+    if: ${{ !github.event.issue.pull_request && ((github.event_name == 'issue_comment' && github.event.comment.user.login == github.repository_owner && (github.event.comment.body == '/approve-catalog' || github.event.comment.body == '/remove-catalog')) || (github.event_name == 'issues' && github.event.action == 'closed')) }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # The repository owner comments /approve-catalog after reviewing the public issue.
+      # The approved fields are copied into a snapshot; later issue edits do not publish.
+      - run: node scripts/catalog-submission.mjs "$GITHUB_EVENT_PATH"
+      - name: Save reviewed catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/community-catalog.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update reviewed Shelfie catalog from issue #${{ github.event.issue.number }}"
+            git push origin HEAD:main
+          fi
+      # GITHUB_TOKEN pushes do not trigger the normal Pages workflow, so deploy here.
+      - run: npm ci
+      - run: npm run build:web
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist-web
+      - name: Deploy reviewed catalog
+        id: deployment
+        uses: actions/deploy-pages@v4
