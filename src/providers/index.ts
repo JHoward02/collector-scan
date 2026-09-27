@@ -1,10 +1,11 @@
 import type { Candidate, SearchQuery } from "../types.ts";
 import { rankCandidates, type ScoredCandidate } from "../match.ts";
+import { cardListsProvider } from "./cardlists.ts";
 import { openLibraryProvider } from "./openlibrary.ts";
 import { wikipediaProvider } from "./wikipedia.ts";
 import { ProviderError, type Provider } from "./types.ts";
 
-export const PROVIDERS: Provider[] = [wikipediaProvider, openLibraryProvider];
+export const PROVIDERS: Provider[] = [cardListsProvider, wikipediaProvider, openLibraryProvider];
 
 export interface SearchOutcome {
   results: ScoredCandidate[];
