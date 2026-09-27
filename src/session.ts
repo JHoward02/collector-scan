@@ -20,6 +20,7 @@ export interface AppSession {
   results: ScoredCandidate[];
   warnings: string[];
   error: string | null;
+  manualOnly: boolean;
   resultsFor: string;
   resultTokens: number;
   collectionQuery: string;
@@ -32,6 +33,6 @@ export interface AppSession {
 }
 
 export function createSession(): AppSession {
-  return {activeTab:"search",query:"",searchCategory:null,tcgGame:null,figureLine:null,toyLine:null,categoryFilter:"all",status:"idle",results:[],warnings:[],error:null,resultsFor:"",resultTokens:0,collectionQuery:"",collectionFilter:"all",collectionSort:"recent",collectionGroupFilter:"all",groupFormOpen:false,favoritesOnly:false,flash:null};
+  return {activeTab:"search",query:"",searchCategory:null,tcgGame:null,figureLine:null,toyLine:null,categoryFilter:"all",status:"idle",results:[],warnings:[],error:null,manualOnly:false,resultsFor:"",resultTokens:0,collectionQuery:"",collectionFilter:"all",collectionSort:"recent",collectionGroupFilter:"all",groupFormOpen:false,favoritesOnly:false,flash:null};
 }
-export function clearSession(session:AppSession):void{session.activeTab="search";session.query="";session.searchCategory=null;session.tcgGame=null;session.figureLine=null;session.toyLine=null;session.categoryFilter="all";session.status="idle";session.results=[];session.warnings=[];session.error=null;session.resultsFor="";session.resultTokens=0;session.collectionQuery="";session.collectionFilter="all";session.collectionSort="recent";session.collectionGroupFilter="all";session.groupFormOpen=false;session.favoritesOnly=false;session.flash=null;}
+export function clearSession(session:AppSession):void{session.activeTab="search";session.query="";session.searchCategory=null;session.tcgGame=null;session.figureLine=null;session.toyLine=null;session.categoryFilter="all";session.status="idle";session.results=[];session.warnings=[];session.error=null;session.manualOnly=false;session.resultsFor="";session.resultTokens=0;session.collectionQuery="";session.collectionFilter="all";session.collectionSort="recent";session.collectionGroupFilter="all";session.groupFormOpen=false;session.favoritesOnly=false;session.flash=null;}
