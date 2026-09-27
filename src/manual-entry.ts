@@ -47,6 +47,29 @@ function saveManual(item: Record<string, unknown>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
 }
 
+function catalogSubmissionUrl(form: HTMLFormElement): string {
+  const fd = new FormData(form);
+  const clean = (key: string, max: number) => String(fd.get(key) || "").trim().replace(/[\r\n]+/g, " ").slice(0, max);
+  const category = clean("category", 30);
+  const selection = getSearchSelection();
+  const line = category === "figure" ? selection.figureLine : category === "toy" ? selection.toyLine : category === "tcg" ? selection.tcgGame : null;
+  const title = clean("title", 200);
+  const body = [
+    "<!-- shelfie-catalog-submission:v1 -->",
+    "### Name", title,
+    "### Category", category,
+    "### Line / game", line || "",
+    "### Year", clean("year", 4),
+    "### Maker", clean("maker", 160),
+    "### Identifier", clean("identifier", 100),
+    "### Photo", "If you want to share a photo, attach it here on GitHub. Photos and private notes saved in Shelfie are not sent automatically.",
+  ].join("\n\n");
+  const url = new URL("https://github.com/JHoward02/collector-scan/issues/new");
+  url.searchParams.set("title", `[Catalog submission] ${title}`);
+  url.searchParams.set("body", body);
+  return url.toString();
+}
+
 function openManual(): void {
   document.querySelector("#shelfie-manual-modal")?.remove();
   const query = (document.querySelector<HTMLInputElement>("#cs-search-input")?.value || "").trim();
@@ -57,7 +80,7 @@ function openManual(): void {
   panel.style.cssText = "background:#fff;color:#111;width:min(560px,100%);max-height:90vh;overflow:auto;border-radius:18px;padding:20px;display:grid;gap:12px";
   panel.innerHTML = `
     <div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><h3 style="margin:0">Add it to Shelfie</h3><button type="button" data-close aria-label="Close" style="font-size:24px;border:0;background:none">×</button></div>
-    <p style="margin:0;color:#555">Saved on this device in your collection. A shared Shelfie catalog is not available yet.</p>
+    <p style="margin:0;color:#555">Save privately to this device, or propose the item for Shelfie's shared catalog. Catalog proposals open on GitHub, require a GitHub account, and appear in search after review.</p>
     <label>Title / name<input required name="title" value="${query.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!))}" class="cs-input" style="width:100%;margin-top:5px"></label>
     <label>Type<select name="category" class="cs-select" style="width:100%;margin-top:5px">
       <option value="comic">Comic</option><option value="tcg">TCG</option><option value="sports-card">Sports card</option><option value="book">Book</option><option value="video-game">Video game</option><option value="figure">Figure</option><option value="toy">Toy</option><option value="coin">Coin</option><option value="vinyl">Vinyl</option><option value="other">Other</option>
@@ -67,9 +90,15 @@ function openManual(): void {
     <label>Identifier <span style="color:#777">UPC, ISBN, issue, catalog/model number, etc.</span><input name="identifier" class="cs-input" style="width:100%;margin-top:5px"></label>
     <label>Photo <span style="color:#777">(optional)</span><input name="photo" type="file" accept="image/*" capture="environment" style="display:block;margin-top:6px"></label>
     <label>Notes <span style="color:#777">(optional)</span><textarea name="notes" rows="3" class="cs-textarea" style="width:100%;margin-top:5px"></textarea></label>
-    <button class="cs-button cs-button--block" type="submit">Save to my collection</button>`;
+    <button class="cs-button cs-button--block" type="submit">Save to my collection</button>
+    <button class="cs-button cs-button--block" type="button" data-catalog>Submit to Shelfie catalog on GitHub</button>
+    <p style="margin:0;color:#555;font-size:13px">Only the name, type, line, year, maker, and identifier are prefilled on GitHub. Review the public proposal there before submitting. Attach a photo there if you want to share one.</p>`;
   (panel.elements.namedItem("category") as HTMLSelectElement).value = selectedCategory();
   panel.querySelector("[data-close]")?.addEventListener("click", () => overlay.remove());
+  panel.querySelector("[data-catalog]")?.addEventListener("click", () => {
+    if (!panel.reportValidity()) return;
+    window.open(catalogSubmissionUrl(panel), "_blank", "noopener,noreferrer");
+  });
   overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
   panel.addEventListener("submit", async (e) => {
     e.preventDefault();
