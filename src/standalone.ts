@@ -10,12 +10,23 @@ let cleanup: void | (() => void);
 function dismissSplash(): void {
   const splash = document.querySelector<HTMLElement>("#shelfie-splash");
   if (!splash) return;
+  const animation = splash.querySelector<HTMLImageElement>(".shelfie-splash__animation");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  window.setTimeout(() => {
-    splash.classList.add("is-leaving");
-    document.documentElement.classList.remove("shelfie-splash-active");
-    window.setTimeout(() => splash.remove(), reduced ? 0 : 360);
-  }, reduced ? 500 : 6700);
+  const fadeDuration = reduced ? 0 : 360;
+  // The GIF lasts 6,080 ms. Finish fading before its second loop begins.
+  const dismissAfter = reduced ? 500 : 6080 - fadeDuration;
+  const startTimer = () => {
+    window.setTimeout(() => {
+      splash.classList.add("is-leaving");
+      document.documentElement.classList.remove("shelfie-splash-active");
+      window.setTimeout(() => splash.remove(), fadeDuration);
+    }, dismissAfter);
+  };
+  if (animation?.complete) startTimer();
+  else if (animation) {
+    animation.addEventListener("load", startTimer, { once: true });
+    animation.addEventListener("error", startTimer, { once: true });
+  } else startTimer();
 }
 
 function routePath(): string {
