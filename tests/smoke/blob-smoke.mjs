@@ -17,7 +17,10 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const bundlePath = path.join(root, "dist", "extension.js");
-const chromePath = process.env.CHROME_PATH || ["/usr/bin/chromium", "/usr/bin/google-chrome", "/usr/bin/chromium-browser"].find(p => spawnSync("test", ["-x", p]).status === 0);
+// CI's preinstalled Chrome can keep the dump-dom process alive indefinitely.
+// Run the deterministic built-artifact check there; set CHROME_PATH explicitly
+// to opt into the separate real-browser acceptance check.
+const chromePath = process.env.CHROME_PATH || (!process.env.CI && ["/usr/bin/chromium", "/usr/bin/google-chrome", "/usr/bin/chromium-browser"].find(p => spawnSync("test", ["-x", p]).status === 0));
 if (!chromePath) {
   console.log("Chromium unavailable; running built-artifact jsdom smoke instead.");
   const fallback = spawnSync(process.execPath, [path.join(root, "tests/smoke/jsdom-smoke.mjs")], { stdio: "inherit" });
