@@ -1,7 +1,7 @@
 /** Shared domain types for Collector Scan. */
 
 export const CATEGORIES = [
-  "comic", "sports-card", "trading-card", "book", "video-game", "figure", "toy",
+  "comic", "tcg", "sports-card", "book", "video-game", "figure", "toy",
   "coin", "vinyl", "sneaker", "other",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -29,14 +29,14 @@ export interface CollectionItem {
 }
 export type SearchStatus = "idle" | "loading" | "ready" | "error";
 export const CATEGORY_LABELS: Record<Category,string> = {
-  comic:"Comic","sports-card":"Sports card","trading-card":"Trading card",book:"Book","video-game":"Video game",
+  comic:"Comic",tcg:"TCG","sports-card":"Sports card",book:"Book","video-game":"Video game",
   figure:"Figure",toy:"Toy",coin:"Coin",vinyl:"Vinyl",sneaker:"Sneaker",other:"Collectible",
 };
 export const CATEGORY_FILTER_LABELS: Record<Category,string> = {
-  comic:"Comics","sports-card":"Sports cards","trading-card":"Trading cards",book:"Books","video-game":"Video games",
+  comic:"Comics",tcg:"TCG","sports-card":"Sports cards",book:"Books","video-game":"Video games",
   figure:"Figures",toy:"Toys",coin:"Coins",vinyl:"Vinyl",sneaker:"Sneakers",other:"Other",
 };
 export const CATEGORY_GLYPHS: Record<Category,string> = {
-  comic:"COMIC","sports-card":"CARD","trading-card":"TCG",book:"BOOK","video-game":"GAME",figure:"FIGURE",
+  comic:"COMIC",tcg:"TCG","sports-card":"CARD",book:"BOOK","video-game":"GAME",figure:"FIGURE",
   toy:"TOY",coin:"COIN",vinyl:"VINYL",sneaker:"SHOE",other:"ITEM",
 };
