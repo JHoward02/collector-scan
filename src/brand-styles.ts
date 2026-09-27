@@ -1,4 +1,4 @@
-export const BRAND_STYLE_MARKER = "shelfie-brand-v020";
+export const BRAND_STYLE_MARKER = "shelfie-brand-v021";
 
 export const brandStyles = `
 .cs-app {
@@ -25,6 +25,8 @@ export const brandStyles = `
 .cs-header { padding: 0 !important; gap: 4px !important; }
 .cs-header__row { min-height: 82px; }
 .cs-title { font-size: 0 !important; display:flex; align-items:center; gap:12px; }
+.cs-title[data-shelfie-home="true"] { cursor:pointer; width:max-content; border-radius:8px; }
+.cs-title[data-shelfie-home="true"]:focus-visible { outline:3px solid #087dcc; outline-offset:5px; }
 .cs-title::before { content:"SHELFIE"; font-size:30px; line-height:1; font-weight:950; font-style:italic; letter-spacing:-.05em; color:#ffcf18; -webkit-text-stroke: 2px #07111f; text-shadow:3px 3px 0 #ef2b2d; }
 .cs-title::after { display:none !important; }
 .cs-subtitle { display:none !important; }
