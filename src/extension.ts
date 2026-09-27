@@ -18,6 +18,22 @@ function injectStyle(marker: string, css: string): () => void {
   return () => { if (style.parentNode) style.parentNode.removeChild(style); };
 }
 
+function enhanceLogoHome(container: HTMLElement, goHome: () => void): void {
+  const logo = container.querySelector<HTMLElement>(".cs-title");
+  if (!logo || logo.dataset.shelfieHome === "true") return;
+  logo.dataset.shelfieHome = "true";
+  logo.setAttribute("role", "link");
+  logo.setAttribute("tabindex", "0");
+  logo.setAttribute("aria-label", "Shelfie home");
+  logo.addEventListener("click", goHome);
+  logo.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      goHome();
+    }
+  });
+}
+
 export function activate(host: CanvasExtensionHost): () => void {
   if (host.apiVersion !== SUPPORTED_API_VERSION) throw new Error(`Collector Scan requires Canvas host API ${SUPPORTED_API_VERSION}; received ${host.apiVersion}.`);
   const removeStyles = injectStyle(STYLE_MARKER, styles);
@@ -27,10 +43,18 @@ export function activate(host: CanvasExtensionHost): () => void {
   const unregister = host.registerPage(PAGE_ID, async (context: CanvasExtensionPageContext) => {
     const app = new CollectorApp(host, session, context.navigate, context.path);
     const unmount = app.mount(context.container);
-    enhanceSearchSelection(context.container);
-    // CollectorApp re-renders after searches and tab changes. Observe those
-    // DOM replacements so the required selector stays attached to Find.
-    const observer = new MutationObserver(() => enhanceSearchSelection(context.container));
+    const goHome = (): void => {
+      session.activeTab = "search";
+      context.navigate(`/extensions/${encodeURIComponent(host.extension.name)}/collection`);
+    };
+    const enhance = (): void => {
+      enhanceSearchSelection(context.container);
+      enhanceLogoHome(context.container, goHome);
+    };
+    enhance();
+    // CollectorApp re-renders after searches and tab changes. Re-attach
+    // progressive enhancements to the newly rendered DOM.
+    const observer = new MutationObserver(enhance);
     observer.observe(context.container, { childList: true, subtree: true });
     return () => { observer.disconnect(); unmount(); clear(context.container); };
   });
