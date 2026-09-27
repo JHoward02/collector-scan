@@ -1,5 +1,12 @@
 # Third-Party Notices
 
+## RAWG
+Shelfie's video-game catalog lookup may use data and images supplied by RAWG:
+https://rawg.io
+https://rawg.io/apidocs
+
+Shelfie identifies RAWG as the data source and provides active links back to RAWG from RAWG-sourced records and the in-app Attribution page. RAWG-supplied game names, artwork, trademarks, screenshots, and other third-party intellectual property remain with their respective rights holders. Use of RAWG data does not imply endorsement of Shelfie by RAWG or game rights holders. Shelfie's RAWG integration is intended to operate within RAWG's applicable API usage terms and limits.
+
 ## Open Library
 Shelfie's book catalog lookup may use metadata and cover links supplied by Open Library, an Internet Archive project:
 https://openlibrary.org
