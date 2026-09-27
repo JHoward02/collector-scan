@@ -1,5 +1,12 @@
 # Third-Party Notices
 
+## AmiiboAPI
+Shelfie's Amiibo lookup uses AmiiboAPI:
+https://www.amiiboapi.com/
+https://github.com/N3evin/AmiiboAPI
+
+AmiiboAPI is an open-source REST API distributed under the MIT License. Amiibo names, product imagery, Nintendo characters, trademarks, and other underlying intellectual property remain with Nintendo and/or their respective rights holders. Shelfie's use of AmiiboAPI does not imply affiliation with or endorsement by Nintendo or the AmiiboAPI maintainers.
+
 ## Funko Pop Data
 Shelfie's Funko Pop lookup uses the open-source Funko Pop Data project maintained by Kenny Chan:
 https://github.com/kennymkchan/funko-pop-data
