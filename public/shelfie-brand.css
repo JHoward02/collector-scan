@@ -11,31 +11,35 @@
 .cs-app .cs-title[data-shelfie-home="true"] {
   background: none !important;
   display: block !important;
-  flex: 1 1 auto !important;
+  flex: 1 1 470px !important;
   font-size: 0 !important;
   height: 108px !important;
   margin: 0 !important;
   max-width: 470px !important;
-  min-width: 280px !important;
-  overflow: hidden !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  padding: 0 !important;
   position: relative !important;
-  text-indent: -9999px !important;
+  text-indent: 0 !important;
   width: 100% !important;
 }
 
 .cs-app .cs-title::before,
-.cs-app .cs-title[data-shelfie-home="true"]::before {
-  background: url("/collector-scan/LogoV3.png?v=logo-3") center center / contain no-repeat !important;
-  content: "" !important;
-  display: block !important;
-  inset: 0 !important;
-  position: absolute !important;
-}
-
 .cs-app .cs-title::after,
+.cs-app .cs-title[data-shelfie-home="true"]::before,
 .cs-app .cs-title[data-shelfie-home="true"]::after {
   content: none !important;
   display: none !important;
+}
+
+.cs-app .cs-title__logo {
+  display: block !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  width: 100% !important;
 }
 
 .cs-app .cs-subtitle {
@@ -44,17 +48,22 @@
 
 @media (max-width: 620px) {
   .cs-app .cs-header__row {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 4px !important;
   }
 
   .cs-app .cs-title,
   .cs-app .cs-title[data-shelfie-home="true"] {
+    flex: none !important;
     height: 92px !important;
     max-width: 100% !important;
     min-width: 0 !important;
     width: 100% !important;
+  }
+
+  .cs-app .cs-title__logo {
+    object-position: center center !important;
   }
 
   .cs-app .cs-count {
