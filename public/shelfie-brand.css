@@ -7,17 +7,28 @@
   min-height: 112px;
 }
 
-.cs-app .cs-title {
-  background: url("/collector-scan/LogoV3.png") left center / contain no-repeat;
-  display: block;
-  flex: 1 1 auto;
-  font-size: 0;
-  height: 108px;
-  margin: 0;
-  max-width: 470px;
-  min-width: 280px;
-  overflow: hidden;
-  text-indent: -9999px;
+.cs-app .cs-title,
+.cs-app .cs-title[data-shelfie-home="true"] {
+  background-image: url("/collector-scan/LogoV3.png?v=logo-1") !important;
+  background-position: left center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  display: block !important;
+  flex: 1 1 auto !important;
+  font-size: 0 !important;
+  height: 108px !important;
+  margin: 0 !important;
+  max-width: 470px !important;
+  min-width: 280px !important;
+  overflow: hidden !important;
+  text-indent: -9999px !important;
+  width: 100% !important;
+}
+
+.cs-app .cs-title::before,
+.cs-app .cs-title::after {
+  content: none !important;
+  display: none !important;
 }
 
 .cs-app .cs-subtitle {
@@ -31,12 +42,13 @@
     gap: 4px;
   }
 
-  .cs-app .cs-title {
-    background-position: center;
-    height: 92px;
-    max-width: 100%;
-    min-width: 0;
-    width: 100%;
+  .cs-app .cs-title,
+  .cs-app .cs-title[data-shelfie-home="true"] {
+    background-position: center !important;
+    height: 92px !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   .cs-app .cs-count {
