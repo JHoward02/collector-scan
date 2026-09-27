@@ -1,5 +1,14 @@
 # Third-Party Notices
 
+## Grand Comics Database (GCD)
+Shelfie's comic catalog lookup may use metadata from the Grand Comics Database:
+https://www.comics.org
+
+GCD database content is made available under the Creative Commons Attribution-ShareAlike 4.0 International license (CC BY-SA 4.0):
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Shelfie attributes comic metadata to the Grand Comics Database. Adapted GCD database metadata distributed by Shelfie is provided under CC BY-SA 4.0 as required by that license. Cover scans/images are not licensed by GCD under CC BY-SA; copyrights and other rights in comic cover artwork remain with their respective rights holders. Shelfie's use of cover imagery, where available, is for identification and does not imply ownership, affiliation, or endorsement.
+
 ## CardLists
 Shelfie's sports-card catalog search can use data from CardLists:
 https://github.com/robert-porter/CardLists
