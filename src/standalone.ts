@@ -1,6 +1,7 @@
 import extension from "./extension.ts";
 import { renderFooter } from "./footer.ts";
 import { installPhotoFallback } from "./photo-fallback.ts";
+import { installManualEntry } from "./manual-entry.ts";
 import type { CanvasExtensionHost, CanvasExtensionPageMount } from "./host.ts";
 
 const root = document.querySelector<HTMLElement>("#app");
@@ -86,4 +87,5 @@ const host: CanvasExtensionHost = {
 extension.activate(host);
 dismissSplash();
 installPhotoFallback();
+installManualEntry();
 window.addEventListener("hashchange", () => void render());
