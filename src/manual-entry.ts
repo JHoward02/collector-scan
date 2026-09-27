@@ -1,3 +1,5 @@
+import { getSearchSelection } from "./search-selection.ts";
+
 const STORAGE_KEY = "openhands:apps:collector-scan:standalone:collection:v1";
 
 const categoryMap: Record<string, string> = {
@@ -55,7 +57,7 @@ function openManual(): void {
   panel.style.cssText = "background:#fff;color:#111;width:min(560px,100%);max-height:90vh;overflow:auto;border-radius:18px;padding:20px;display:grid;gap:12px";
   panel.innerHTML = `
     <div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><h3 style="margin:0">Add it to Shelfie</h3><button type="button" data-close aria-label="Close" style="font-size:24px;border:0;background:none">×</button></div>
-    <p style="margin:0;color:#555">This creates a private item in your collection. It will not be added to Shelfie's shared catalog.</p>
+    <p style="margin:0;color:#555">Saved on this device in your collection. A shared Shelfie catalog is not available yet.</p>
     <label>Title / name<input required name="title" value="${query.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!))}" class="cs-input" style="width:100%;margin-top:5px"></label>
     <label>Type<select name="category" class="cs-select" style="width:100%;margin-top:5px">
       <option value="comic">Comic</option><option value="tcg">TCG</option><option value="sports-card">Sports card</option><option value="book">Book</option><option value="video-game">Video game</option><option value="figure">Figure</option><option value="toy">Toy</option><option value="coin">Coin</option><option value="vinyl">Vinyl</option><option value="other">Other</option>
@@ -83,11 +85,14 @@ function openManual(): void {
     const yearRaw = Number(fd.get("year"));
     const maker = String(fd.get("maker") || "").trim();
     const identifier = String(fd.get("identifier") || "").trim();
+    const category = String(fd.get("category") || "other");
+    const selection = getSearchSelection();
+    const line = category === "figure" ? selection.figureLine : category === "toy" ? selection.toyLine : category === "tcg" ? selection.tcgGame : null;
     saveManual({
       id: id(), addedAt: now, updatedAt: now, title, subtitle: maker || null,
-      category: String(fd.get("category") || "other"), year: Number.isFinite(yearRaw) && yearRaw > 0 ? yearRaw : null,
+      category, year: Number.isFinite(yearRaw) && yearRaw > 0 ? yearRaw : null,
       imageUrl, description: null, sourceUrl: null, sourceLabel: "Manual entry",
-      details: [maker ? { label: "Maker / publisher / artist", value: maker } : null, identifier ? { label: "Identifier", value: identifier } : null].filter(Boolean),
+      details: [maker ? { label: "Maker / publisher / artist", value: maker } : null, identifier ? { label: "Identifier", value: identifier } : null, line ? { label: "Line / game", value: line } : null, category === "toy" && selection.toyLine === "die-cast" && selection.dieCastBrand ? { label: "Brand", value: selection.dieCastBrand } : null].filter(Boolean),
       condition: "good", grade: "", quantity: 1, pricePaid: null, estimatedValue: null,
       notes: String(fd.get("notes") || "").trim(), favorite: false, groupId: null,
     });
@@ -113,8 +118,9 @@ function installButton(): void {
 }
 
 export function installManualEntry(): () => void {
+  document.addEventListener("shelfie:manual-entry", openManual);
   const observer = new MutationObserver(installButton);
   observer.observe(document.documentElement, { childList: true, subtree: true });
   installButton();
-  return () => observer.disconnect();
+  return () => { observer.disconnect(); document.removeEventListener("shelfie:manual-entry", openManual); };
 }
