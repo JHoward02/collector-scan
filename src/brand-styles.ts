@@ -33,7 +33,7 @@ export const brandStyles = `
 .cs-tab { border-radius:9px !important; min-height:38px !important; color:#475467 !important; padding:8px 14px !important; }
 .cs-tab[aria-selected="true"] { background:#07111f !important; color:#fff !important; }
 .cs-search { gap:14px !important; padding-top:44px; }
-.cs-search::before { content:"Find your next collectible"; display:block; font-size:clamp(30px,5vw,52px); font-weight:850; letter-spacing:-.045em; line-height:1.02; max-width:680px; color:#07111f; }
+.cs-search::before { content:"Add to your Shelfie"; display:block; font-size:clamp(30px,5vw,52px); font-weight:850; letter-spacing:-.045em; line-height:1.02; max-width:680px; color:#07111f; }
 .cs-search::after { content:"Search comics, sports cards, books, and more. Find it, save it, build your Shelfie."; display:block; order:-1; color:#667085; font-size:16px; margin-top:-6px; }
 .cs-search__row { background:#fff; border:2px solid #07111f; border-radius:18px; padding:5px; box-shadow:0 18px 44px -28px rgba(7,17,31,.45); }
 .cs-search__row .cs-input { border:0 !important; background:#fff !important; min-height:54px !important; font-size:16px; padding-left:16px !important; }
